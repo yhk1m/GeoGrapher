@@ -17,7 +17,7 @@ export const GRAPH_LABELS: Record<GraphType, string> = {
   stacked: '누적 막대/원 그래프',
   scatter: '산점도/버블 차트',
   hythergraph: '하이서그래프',
-  cube: '직육면체 그래프',
+  cube: '정육면체 그래프',
   radar: '방사형 그래프',
 };
 

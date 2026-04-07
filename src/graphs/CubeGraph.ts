@@ -67,7 +67,7 @@ export function renderCubeGraph(
   const cf = options.customFont;
   const fs = options.fontSize;
 
-  const topPad = options.title ? 80 : 40;
+  const topPad = options.title ? 100 : 60;
   let bottomPad = 40;
   if (options.source) bottomPad += 30;
   if (options.footnote) bottomPad += 25;
