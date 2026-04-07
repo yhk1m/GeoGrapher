@@ -1,7 +1,7 @@
 // © 2026 김용현
 import { type CubeGraphData, type GraphOptions } from '../data/types';
 import { clearCanvas, getFont } from '../canvas/renderer';
-// labels는 큐브에서 직접 그림
+import { drawSourceAndFootnote } from '../canvas/labels';
 
 // 사각 투영 (oblique / cabinet)
 // 앞면: Z→오른쪽, Y→위 (직사각형)
@@ -134,9 +134,7 @@ export function renderCubeGraph(
     ctx.fillText(pt.label, px, py);
   }
 
-  // 큐브 영역 기준으로 제목/출처를 가까이 배치
-  const allY = v2.map(([, vy]) => vy);
-  const cubeBottom = Math.max(...allY);
+  // 큐브 영역 기준으로 제목/출처 배치
   const plotX = 80;
   const plotW = w - 160;
 
@@ -149,22 +147,7 @@ export function renderCubeGraph(
     ctx.fillText(options.title, w / 2, yAxisTop[1] - 50);
   }
 
-  let footY = cubeBottom + 50;
-  if (options.source) {
-    ctx.fillStyle = '#555';
-    ctx.font = `bold ${fs.dataLabel}px 'Noto Sans KR', sans-serif`;
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText(options.source, plotX + plotW, footY);
-    footY += fs.dataLabel + 4;
-  }
-  if (options.footnote) {
-    ctx.fillStyle = '#555';
-    ctx.font = `${fs.dataLabel * 0.9}px 'Noto Sans KR', sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('* ' + options.footnote, plotX, footY);
-  }
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 function drawArrow(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {

@@ -28,15 +28,23 @@ interface SourceFootnoteParams {
   source: string;
   footnote: string;
   fontSize: number;
+  canvasWidth?: number;
 }
 
+const MIN_MARGIN = 100;
+
 export function drawSourceAndFootnote({
-  ctx, plotX, plotW, height, source, footnote, fontSize,
+  ctx, plotX, plotW, height, source, footnote, fontSize, canvasWidth,
 }: SourceFootnoteParams) {
   ctx.save();
 
-  const rightX = plotX + plotW;
-  const leftX = plotX;
+  // 캔버스 폭이 주어지면 최소 마진 보장
+  let leftX = plotX;
+  let rightX = plotX + plotW;
+  if (canvasWidth != null) {
+    leftX = Math.max(plotX, MIN_MARGIN);
+    rightX = Math.min(plotX + plotW, canvasWidth - MIN_MARGIN);
+  }
 
   // 아래에서 위로 쌓기: 각주 → 출처
   let y = height - 6;

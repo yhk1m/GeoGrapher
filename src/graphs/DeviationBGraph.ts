@@ -169,7 +169,7 @@ export function renderDeviationBGraph(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }
 
 function drawDevBYAxis(

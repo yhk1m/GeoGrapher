@@ -165,7 +165,7 @@ function renderNormal(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 편차 산점도 ───────────────────────────────────────
@@ -341,7 +341,7 @@ function renderDeviation(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 공통 유틸 ─────────────────────────────────────────

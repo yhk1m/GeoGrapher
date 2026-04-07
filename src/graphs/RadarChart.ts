@@ -215,7 +215,7 @@ export function renderRadarChart(
   const plotX = leftPad;
   const plotW = availW;
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 function formatTick(v: number): string {

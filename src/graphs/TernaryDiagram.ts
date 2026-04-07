@@ -226,5 +226,5 @@ export function renderTernaryGraph(
 
 
   // 출처 + 각주 — 삼각형 좌우 범위 기준
-  drawSourceAndFootnote({ ctx, plotX: leftPt.x, plotW: rightPt.x - leftPt.x, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX: leftPt.x, plotW: rightPt.x - leftPt.x, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }

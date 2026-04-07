@@ -197,9 +197,10 @@ export function renderClimateGraph(
       position: legendPos,
       plotX, plotY, plotW, plotH,
       fontSize: options.fontSize.dataLabel * 0.85 + 5,
+      rightGap: 80,
     });
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }
