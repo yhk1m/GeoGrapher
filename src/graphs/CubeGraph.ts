@@ -67,14 +67,14 @@ export function renderCubeGraph(
   const cf = options.customFont;
   const fs = options.fontSize;
 
-  const topPad = options.title ? 55 : 15;
-  let bottomPad = 15;
+  const topPad = options.title ? 80 : 40;
+  let bottomPad = 40;
   if (options.source) bottomPad += 30;
   if (options.footnote) bottomPad += 25;
 
-  const availW = w - 200;
+  const availW = w - 240;
   const availH = h - topPad - bottomPad;
-  const scale = Math.min(availW * 0.6, availH * 0.7);
+  const scale = Math.min(availW * 0.5, availH * 0.55);
 
   // 큐브 중심을 화면 중심에 맞추기
   const cubeCenter = project(0.5, 0.5, 0.5, 0, 0, scale);
@@ -211,8 +211,8 @@ function drawAxes(
   const zEnd = project(0, 0, ext, cx, cy, scale);
   drawArrow(ctx, zStart[0], zStart[1], zEnd[0], zEnd[1]);
 
-  const nameFont = getFont(fs.axisLabel * 0.85, font, cf, 'bold');
-  const dirFont = getFont(fs.axisLabel * 0.75, font, cf, 'normal');
+  const nameFont = getFont(fs.axisLabel, font, cf, 'bold');
+  const dirFont = getFont(fs.axisLabel * 0.9, font, cf, 'normal');
 
   // 좌하 깊이 → Z축 라벨
   ctx.font = nameFont;
