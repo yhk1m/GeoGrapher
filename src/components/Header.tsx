@@ -2,6 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { type GraphType, GRAPH_LABELS } from '../data/types';
 
+// Apps Script 웹앱 URL (배포 후 여기에 붙여넣기)
+const VIEW_COUNTER_URL = 'https://script.google.com/macros/s/AKfycbz6Vhkw46y15Sqly7008IeVVEZMzaseLZzqerygPe-iozo_RuG6UwjHngTcYpcHUF_dUA/exec';
+
 interface HeaderProps {
   graphType: GraphType;
   onGraphTypeChange: (type: GraphType) => void;
@@ -24,7 +27,17 @@ export default function Header({
   drawerOpen,
 }: HeaderProps) {
   const [open, setOpen] = useState(false);
+  const [viewCount, setViewCount] = useState<{ today: number; total: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 뷰 카운터
+  useEffect(() => {
+    if (!VIEW_COUNTER_URL) return;
+    fetch(VIEW_COUNTER_URL)
+      .then((r) => r.json())
+      .then((data) => setViewCount(data))
+      .catch(() => {});
+  }, []);
 
   // 바깥 클릭 시 닫기
   useEffect(() => {
@@ -41,6 +54,11 @@ export default function Header({
   return (
     <header style={styles.header}>
       <div style={styles.logo}>GeoGrapher</div>
+      {viewCount && (
+        <span style={styles.viewCount}>
+          today <strong>{viewCount.today}</strong> / total <strong>{viewCount.total}</strong>
+        </span>
+      )}
 
       <div style={{ flex: 1 }} />
 
@@ -95,6 +113,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fff',
     gap: 12,
     flexShrink: 0,
+  },
+  viewCount: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    whiteSpace: 'nowrap' as const,
+    letterSpacing: '0.02em',
   },
   logo: {
     fontWeight: 700,
