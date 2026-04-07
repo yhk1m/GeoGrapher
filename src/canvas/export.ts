@@ -2,6 +2,7 @@
 import { type ExportSettings, type GraphType } from '../data/types';
 
 const TYPE_NAMES: Record<GraphType, string> = {
+  guide: 'guide',
   climate: 'climate',
   pyramid: 'pyramid',
   ternary: 'ternary',

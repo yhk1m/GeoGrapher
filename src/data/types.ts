@@ -1,6 +1,7 @@
 // © 2026 김용현
 // 그래프 유형
 export type GraphType =
+  | 'guide'
   | 'climate'
   | 'pyramid'
   | 'ternary'
@@ -11,6 +12,7 @@ export type GraphType =
   | 'radar';
 
 export const GRAPH_LABELS: Record<GraphType, string> = {
+  guide: '사용법 보기',
   climate: '기후 그래프',
   pyramid: '인구 피라미드',
   ternary: '삼각 그래프',

@@ -1,6 +1,7 @@
 // © 2026 김용현
 import { useState, useCallback } from 'react';
 import Header from './components/Header';
+import GuidePage from './components/GuidePage';
 import GraphCanvas from './components/GraphCanvas';
 import DataDrawer from './components/DataDrawer';
 import ExportModal from './components/ExportModal';
@@ -34,7 +35,7 @@ import {
 } from './data/types';
 
 export default function App() {
-  const [graphType, setGraphType] = useState<GraphType>('climate');
+  const [graphType, setGraphType] = useState<GraphType>('guide');
   const [climateMode, setClimateMode] = useState<ClimateMode>('normal');
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
@@ -66,49 +67,55 @@ export default function App() {
         drawerOpen={drawerOpen}
       />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <GraphCanvas
-          graphType={graphType}
-          climateMode={climateMode}
-          climateData={climateData}
-          deviationAData={deviationAData}
-          deviationBData={deviationBData}
-          pyramidData={pyramidData}
-          ternaryData={ternaryData}
-          stackedData={stackedData}
-          scatterData={scatterData}
-          hythergraphData={hythergraphData}
-          cubeData={cubeData}
-          radarData={radarData}
-          options={options}
-        />
-        <DataDrawer
-          open={drawerOpen}
-          graphType={graphType}
-          climateMode={climateMode}
-          onClimateModeChange={setClimateMode}
-          climateData={climateData}
-          onClimateDataChange={setClimateData}
-          deviationAData={deviationAData}
-          onDeviationADataChange={setDeviationAData}
-          deviationBData={deviationBData}
-          onDeviationBDataChange={setDeviationBData}
-          pyramidData={pyramidData}
-          onPyramidDataChange={setPyramidData}
-          ternaryData={ternaryData}
-          onTernaryDataChange={setTernaryData}
-          stackedData={stackedData}
-          onStackedDataChange={setStackedData}
-          scatterData={scatterData}
-          onScatterDataChange={setScatterData}
-          hythergraphData={hythergraphData}
-          onHythergraphDataChange={setHythergraphData}
-          cubeData={cubeData}
-          onCubeDataChange={setCubeData}
-          radarData={radarData}
-          onRadarDataChange={setRadarData}
-          options={options}
-          onOptionsChange={setOptions}
-        />
+        {graphType === 'guide' ? (
+          <GuidePage onNavigate={setGraphType} />
+        ) : (
+          <>
+            <GraphCanvas
+              graphType={graphType}
+              climateMode={climateMode}
+              climateData={climateData}
+              deviationAData={deviationAData}
+              deviationBData={deviationBData}
+              pyramidData={pyramidData}
+              ternaryData={ternaryData}
+              stackedData={stackedData}
+              scatterData={scatterData}
+              hythergraphData={hythergraphData}
+              cubeData={cubeData}
+              radarData={radarData}
+              options={options}
+            />
+            <DataDrawer
+              open={drawerOpen}
+              graphType={graphType}
+              climateMode={climateMode}
+              onClimateModeChange={setClimateMode}
+              climateData={climateData}
+              onClimateDataChange={setClimateData}
+              deviationAData={deviationAData}
+              onDeviationADataChange={setDeviationAData}
+              deviationBData={deviationBData}
+              onDeviationBDataChange={setDeviationBData}
+              pyramidData={pyramidData}
+              onPyramidDataChange={setPyramidData}
+              ternaryData={ternaryData}
+              onTernaryDataChange={setTernaryData}
+              stackedData={stackedData}
+              onStackedDataChange={setStackedData}
+              scatterData={scatterData}
+              onScatterDataChange={setScatterData}
+              hythergraphData={hythergraphData}
+              onHythergraphDataChange={setHythergraphData}
+              cubeData={cubeData}
+              onCubeDataChange={setCubeData}
+              radarData={radarData}
+              onRadarDataChange={setRadarData}
+              options={options}
+              onOptionsChange={setOptions}
+            />
+          </>
+        )}
       </div>
       {exportOpen && (
         <ExportModal

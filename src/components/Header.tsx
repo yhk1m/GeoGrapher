@@ -10,7 +10,8 @@ interface HeaderProps {
   drawerOpen: boolean;
 }
 
-const GRAPH_TYPES: GraphType[] = [
+const MENU_ITEMS: GraphType[] = [
+  'guide',
   'climate', 'pyramid', 'ternary', 'stacked',
   'scatter', 'hythergraph', 'cube', 'radar',
 ];
@@ -55,18 +56,20 @@ export default function Header({
           </button>
           {open && (
             <div style={styles.dropdownMenu}>
-              {GRAPH_TYPES.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => { onGraphTypeChange(type); setOpen(false); }}
-                  style={{
-                    ...styles.menuItem,
-                    background: graphType === type ? '#1B2A4A' : '#fff',
-                    color: graphType === type ? '#fff' : '#374151',
-                  }}
-                >
-                  {GRAPH_LABELS[type]}
-                </button>
+              {MENU_ITEMS.map((type, idx) => (
+                <div key={type}>
+                  {idx === 1 && <div style={styles.separator} />}
+                  <button
+                    onClick={() => { onGraphTypeChange(type); setOpen(false); }}
+                    style={{
+                      ...styles.menuItem,
+                      background: graphType === type ? '#1B2A4A' : '#fff',
+                      color: graphType === type ? '#fff' : '#374151',
+                    }}
+                  >
+                    {GRAPH_LABELS[type]}
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -123,6 +126,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 4,
     zIndex: 200,
     minWidth: 180,
+  },
+  separator: {
+    height: 1,
+    background: '#E5E7EB',
+    margin: '4px 8px',
   },
   menuItem: {
     display: 'block',
