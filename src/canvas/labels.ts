@@ -26,7 +26,7 @@ interface SourceFootnoteParams {
   plotW: number;
   height: number;
   source: string;
-  footnote: string;
+  footnotes: string[];
   fontSize: number;
   canvasWidth?: number;
 }
@@ -34,11 +34,10 @@ interface SourceFootnoteParams {
 const MIN_MARGIN = 100;
 
 export function drawSourceAndFootnote({
-  ctx, plotX, plotW, height, source, footnote, fontSize, canvasWidth,
+  ctx, plotX, plotW, height, source, footnotes, fontSize, canvasWidth,
 }: SourceFootnoteParams) {
   ctx.save();
 
-  // 캔버스 폭이 주어지면 최소 마진 보장
   let leftX = plotX;
   let rightX = plotX + plotW;
   if (canvasWidth != null) {
@@ -46,23 +45,28 @@ export function drawSourceAndFootnote({
     rightX = Math.min(plotX + plotW, canvasWidth - MIN_MARGIN);
   }
 
-  // 아래에서 위로 쌓기: 각주 → 출처
-  let y = height - 6;
+  // 위에서 아래로: 출처 → 각주들
+  const filtered = footnotes.filter((f) => f.trim());
+  const totalFootnoteH = filtered.length * (fontSize * 0.9 + 4);
+  const sourceH = source ? fontSize + 4 : 0;
+  let y = height - 6 - totalFootnoteH;
 
-  if (footnote) {
-    ctx.fillStyle = '#555';
-    ctx.font = `${fontSize * 0.9}px ${LABEL_FONT}`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('* ' + footnote, leftX, y);
-    y -= fontSize * 0.9 + 4;
-  }
   if (source) {
     ctx.fillStyle = '#555';
     ctx.font = `bold ${fontSize}px ${LABEL_FONT}`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText(source, rightX, y);
+    y += sourceH;
+  }
+
+  for (let i = 0; i < filtered.length; i++) {
+    ctx.fillStyle = '#555';
+    ctx.font = `${fontSize * 0.9}px ${LABEL_FONT}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('* ' + filtered[i], leftX, y);
+    y += fontSize * 0.9 + 4;
   }
 
   ctx.restore();

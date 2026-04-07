@@ -41,7 +41,7 @@ export function renderRadarChart(
   let bottomPad = 10;
   if (showLegend && legendPos === 'bottom') bottomPad += 70;
   if (options.source) bottomPad += 25;
-  if (options.footnote) bottomPad += 20;
+  bottomPad += options.footnotes.filter(f => f.trim()).length * 22;
   const rightPad = 60 + legendW;
   const leftPad = 60;
 
@@ -215,7 +215,7 @@ export function renderRadarChart(
   const plotX = leftPad;
   const plotW = availW;
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 function formatTick(v: number): string {

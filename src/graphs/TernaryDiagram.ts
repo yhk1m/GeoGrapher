@@ -1,6 +1,6 @@
 // © 2026 김용현
 import { type TernaryGraphData, type GraphOptions } from '../data/types';
-import { type Padding, clearCanvas, getFont } from '../canvas/renderer';
+import { type Padding, clearCanvas, getFont, fillTextMultiline } from '../canvas/renderer';
 import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
 
 // 삼각좌표 → 캔버스 좌표 변환
@@ -35,18 +35,18 @@ export function renderTernaryGraph(
 ) {
   clearCanvas(ctx, w, h);
 
-  // 하단 여백: tick(12) + 숫자(tick font) + 축라벨 + 출처/각주
+  // 하단 여백: tick + 숫자 + 축라벨 + 출처/각주
   const tickSpace = 12 + options.fontSize.tick + 10;
-  const axisLabelSpace = options.fontSize.axisLabel * 1.3 + 10;
+  const axisLabelSpace = options.fontSize.axisLabel * 1.3 + 30;
   let bottomExtra = tickSpace + axisLabelSpace;
-  if (options.source) bottomExtra += options.fontSize.dataLabel + 6;
-  if (options.footnote) bottomExtra += options.fontSize.dataLabel * 0.9 + 6;
+  if (options.source) bottomExtra += options.fontSize.dataLabel + 10;
+  bottomExtra += options.footnotes.filter(f => f.trim()).length * 22;
 
   const padding: Padding = {
     top: options.title ? 80 : 50,
-    right: 80,
+    right: 120,
     bottom: bottomExtra,
-    left: 80,
+    left: 120,
   };
 
   const plotX = padding.left;
@@ -78,25 +78,26 @@ export function renderTernaryGraph(
   ctx.strokeStyle = '#ccc';
   ctx.lineWidth = 0.5;
   for (let i = 1; i < steps; i++) {
-    // A축 평행선 (leftPt → rightPt 방향)
-    const a1 = ternaryToXY(100 - i * interval, i * interval, 0, cx, cy, triSize);
-    const a2 = ternaryToXY(100 - i * interval, 0, i * interval, cx, cy, triSize);
+    const v = i * interval;
+    // A축 평행선 (하변과 평행, 상수 c = v)
+    const a1 = ternaryToXY(100 - v, 0, v, cx, cy, triSize);
+    const a2 = ternaryToXY(0, 100 - v, v, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(a1.x, a1.y);
     ctx.lineTo(a2.x, a2.y);
     ctx.stroke();
 
-    // B축 평행선
-    const b1 = ternaryToXY(i * interval, 100 - i * interval, 0, cx, cy, triSize);
-    const b2 = ternaryToXY(0, 100 - i * interval, i * interval, cx, cy, triSize);
+    // B축 평행선 (우변과 평행, 상수 a = v)
+    const b1 = ternaryToXY(v, 100 - v, 0, cx, cy, triSize);
+    const b2 = ternaryToXY(v, 0, 100 - v, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(b1.x, b1.y);
     ctx.lineTo(b2.x, b2.y);
     ctx.stroke();
 
-    // C축 평행선
-    const c1 = ternaryToXY(i * interval, 0, 100 - i * interval, cx, cy, triSize);
-    const c2 = ternaryToXY(0, i * interval, 100 - i * interval, cx, cy, triSize);
+    // C축 평행선 (좌변과 평행, 상수 b = v)
+    const c1 = ternaryToXY(0, v, 100 - v, cx, cy, triSize);
+    const c2 = ternaryToXY(100 - v, v, 0, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(c1.x, c1.y);
     ctx.lineTo(c2.x, c2.y);
@@ -127,10 +128,10 @@ export function renderTernaryGraph(
 
   // A축(좌변) tick 방향: 수평 좌측 (-1, 0)
   const aTick = { x: -1, y: 0 };
-  // B축(하변) tick 방향: 좌하 60° = (-cos60°, sin60°) = (-0.5, 0.866)
-  const bTick = { x: -Math.cos(Math.PI / 3), y: Math.sin(Math.PI / 3) };
-  // C축(우변) tick 방향: 우측 수평 (1, 0)
-  const cTick = { x: 1, y: 0 };
+  // B축(하변) tick 방향: 120° = (cos60°, sin60°) → 우하 방향
+  const bTick = { x: Math.cos(Math.PI / 3), y: Math.sin(Math.PI / 3) };
+  // C축(우변) tick 방향: 60° = (cos60°, -sin60°)
+  const cTick = { x: Math.cos(Math.PI / 3), y: -Math.sin(Math.PI / 3) };
 
   ctx.fillStyle = '#000';
   ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
@@ -140,8 +141,8 @@ export function renderTernaryGraph(
   for (let i = 0; i <= steps; i++) {
     const val = i * interval;
 
-    // A축 (좌변: top → left) — tick + 숫자
-    const aPos = ternaryToXY(val, 0, 100 - val, cx, cy, triSize);
+    // A축 (좌변: bottom → top, 시계방향) — tick + 숫자
+    const aPos = ternaryToXY(100 - val, 0, val, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(aPos.x, aPos.y);
     ctx.lineTo(aPos.x + aTick.x * tickLen, aPos.y + aTick.y * tickLen);
@@ -150,8 +151,8 @@ export function renderTernaryGraph(
     ctx.textBaseline = 'middle';
     ctx.fillText(String(val), aPos.x + aTick.x * tickLen - 4, aPos.y + aTick.y * tickLen);
 
-    // B축 (하변: left → right) — tick + 숫자
-    const bPos = ternaryToXY(100 - val, val, 0, cx, cy, triSize);
+    // B축 (하변: right → left, 시계방향) — tick + 숫자
+    const bPos = ternaryToXY(val, 100 - val, 0, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(bPos.x, bPos.y);
     ctx.lineTo(bPos.x + bTick.x * tickLen, bPos.y + bTick.y * tickLen);
@@ -160,8 +161,8 @@ export function renderTernaryGraph(
     ctx.textBaseline = 'top';
     ctx.fillText(String(val), bPos.x + bTick.x * tickLen, bPos.y + bTick.y * tickLen + 4);
 
-    // C축 (우변: right → top) — tick + 숫자
-    const cPos = ternaryToXY(0, 100 - val, val, cx, cy, triSize);
+    // C축 (우변: top → bottom, 시계방향) — tick + 숫자
+    const cPos = ternaryToXY(0, val, 100 - val, cx, cy, triSize);
     ctx.beginPath();
     ctx.moveTo(cPos.x, cPos.y);
     ctx.lineTo(cPos.x + cTick.x * tickLen, cPos.y + cTick.y * tickLen);
@@ -176,25 +177,33 @@ export function renderTernaryGraph(
   ctx.font = getFont(options.fontSize.axisLabel * 1.3, font, customFont, 'bold');
   ctx.fillStyle = '#000';
 
-  // A (좌하 꼭짓점)
+  // A (좌변 중앙 — 바깥쪽)
+  const aMidX = (topPt.x + leftPt.x) / 2;
+  const aMidY = (topPt.y + leftPt.y) / 2;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  const labelLineH = options.fontSize.axisLabel * 1.3 * 1.3;
+  fillTextMultiline(ctx, data.axisLabels[0], aMidX - 52, aMidY, labelLineH);
+
+  // B (하변 중앙 — 아래쪽)
+  const bMidX = (leftPt.x + rightPt.x) / 2;
+  const bMidY = (leftPt.y + rightPt.y) / 2;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText(data.axisLabels[0], leftPt.x - 20, leftPt.y + options.fontSize.tick + 20);
+  ctx.fillText(data.axisLabels[1], bMidX, bMidY + 52);
 
-  // B (우하 꼭짓점)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(data.axisLabels[1], rightPt.x + 20, rightPt.y + options.fontSize.tick + 20);
-
-  // C (상단 꼭짓점)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(data.axisLabels[2], topPt.x, topPt.y - 12);
+  // C (우변 중앙 — 바깥쪽)
+  const cMidX = (rightPt.x + topPt.x) / 2;
+  const cMidY = (rightPt.y + topPt.y) / 2;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  fillTextMultiline(ctx, data.axisLabels[2], cMidX + 52, cMidY, labelLineH);
 
   // 데이터 포인트
   for (let i = 0; i < data.points.length; i++) {
     const p = data.points[i];
-    const { x, y } = ternaryToXY(p.a, p.b, p.c, cx, cy, triSize);
+    // 시계방향 좌표: user(a,b,c) → internal(b, c, a)
+    const { x, y } = ternaryToXY(p.b, p.c, p.a, cx, cy, triSize);
 
     // 점
     ctx.fillStyle = '#000';
@@ -226,5 +235,5 @@ export function renderTernaryGraph(
 
 
   // 출처 + 각주 — 삼각형 좌우 범위 기준
-  drawSourceAndFootnote({ ctx, plotX: leftPt.x, plotW: rightPt.x - leftPt.x, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX: leftPt.x, plotW: rightPt.x - leftPt.x, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }

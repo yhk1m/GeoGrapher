@@ -1,8 +1,7 @@
 // © 2026 김용현
 import { type ScatterGraphData, type GraphOptions } from '../data/types';
-import { type Padding, clearCanvas, getFont, autoRange } from '../canvas/renderer';
+import { type Padding, clearCanvas, getFont, autoRange, fillTextMultiline } from '../canvas/renderer';
 import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
-import { drawLegend, measureLegendWidth } from '../canvas/legend';
 
 export function renderScatterGraph(
   ctx: CanvasRenderingContext2D,
@@ -32,24 +31,17 @@ function renderNormal(
   const font = options.fontFamily;
   const cf = options.customFont;
   const fs = options.fontSize;
-  const showLegend = options.showLegend && data.points.length > 0;
-  const legendPos = options.legendPosition;
-  const legendLabels = data.points.map((p) => p.label || '?');
-  const legendW = (showLegend && legendPos === 'right')
-    ? measureLegendWidth(ctx, legendLabels, fs.dataLabel * 0.85 + 5)
-    : 0;
 
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: 60 + legendW,
+    right: 60,
     bottom: (() => {
       let b = 90;
-      if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
-    left: 100,
+    left: 130,
   };
 
   const plotX = padding.left;
@@ -132,40 +124,41 @@ function renderNormal(
 
   // 축 라벨
   ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
+
+  // X축 라벨 (하단 중앙)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const xLabelText = data.xLabel + (data.xUnit ? ` ${data.xUnit}` : '');
-  ctx.fillText(xLabelText, plotX + plotW / 2, plotY + plotH + 40);
+  ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
 
-  ctx.save();
-  ctx.translate(30, plotY + plotH / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
+  // X축 단위 (우측 끝, 라벨과 같은 높이)
+  if (data.xUnit) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(data.xUnit, plotX + plotW + 10, plotY + plotH + 40);
+  }
+
+  // Y축 단위 (상단 끝)
+  if (data.yUnit) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(data.yUnit, plotX - 10, plotY - 16);
+  }
+
+  // Y축 라벨 (Y축 중간, 줄바꿈 지원)
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  const yLabelText = data.yLabel + (data.yUnit ? ` ${data.yUnit}` : '');
-  ctx.fillText(yLabelText, 0, 0);
-  ctx.restore();
+  fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
 
   // 데이터 포인트
   drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels);
 
-  // 범례
-  if (showLegend) {
-    const items = data.points.map((pt) => ({
-      type: 'circle' as const,
-      fillStyle: '#000',
-      label: pt.label || '?',
-    }));
-    drawLegend({
-      ctx, items, position: legendPos,
-      plotX, plotY, plotW, plotH,
-      fontSize: fs.dataLabel * 0.85 + 5,
-      bottomOffset: 75,
-    });
+  // 버블 크기 범례
+  if (data.showBubble && data.points.length > 0) {
+    drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 편차 산점도 ───────────────────────────────────────
@@ -181,24 +174,16 @@ function renderDeviation(
   const cf = options.customFont;
   const fs = options.fontSize;
 
-  const showLegend = options.showLegend && data.points.length > 0;
-  const legendPos = options.legendPosition;
-  const legendLabels = data.points.map((p) => p.label || '?');
-  const legendW = (showLegend && legendPos === 'right')
-    ? measureLegendWidth(ctx, legendLabels, fs.dataLabel * 0.85 + 5)
-    : 0;
-
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: 80 + legendW,
+    right: 80,
     bottom: (() => {
       let b = 90;
-      if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
-    left: 100,
+    left: 130,
   };
 
   const plotX = padding.left;
@@ -308,40 +293,41 @@ function renderDeviation(
 
   // 축 라벨
   ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
+
+  // X축 라벨 (하단 중앙)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const xLabelText = data.xLabel + (data.xUnit ? ` ${data.xUnit}` : '');
-  ctx.fillText(xLabelText, plotX + plotW / 2, plotY + plotH + 40);
+  ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
 
-  ctx.save();
-  ctx.translate(30, plotY + plotH / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
+  // X축 단위 (우측 끝, 라벨과 같은 높이)
+  if (data.xUnit) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(data.xUnit, plotX + plotW + 10, plotY + plotH + 40);
+  }
+
+  // Y축 단위 (상단 끝)
+  if (data.yUnit) {
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(data.yUnit, plotX - 10, plotY - 16);
+  }
+
+  // Y축 라벨 (Y축 중간, 줄바꿈 지원)
+  ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  const yLabelText = data.yLabel + (data.yUnit ? ` ${data.yUnit}` : '');
-  ctx.fillText(yLabelText, 0, 0);
-  ctx.restore();
+  fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
 
   // 데이터 포인트
   drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels);
 
-  // 범례
-  if (showLegend) {
-    const items = data.points.map((pt) => ({
-      type: 'circle' as const,
-      fillStyle: '#000',
-      label: pt.label || '?',
-    }));
-    drawLegend({
-      ctx, items, position: legendPos,
-      plotX, plotY, plotW, plotH,
-      fontSize: fs.dataLabel * 0.85 + 5,
-      bottomOffset: 75,
-    });
+  // 버블 크기 범례
+  if (data.showBubble && data.points.length > 0) {
+    drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 공통 유틸 ─────────────────────────────────────────
@@ -430,4 +416,82 @@ function symmetricRange(absMax: number): { limit: number; step: number } {
 
 function formatTick(v: number): string {
   return Math.abs(v) < 0.0001 ? '0' : Number(v.toFixed(2)).toString();
+}
+
+/** 버블 크기 범례: 겹친 원 + 박스 */
+function drawBubbleLegend(
+  ctx: CanvasRenderingContext2D,
+  data: ScatterGraphData,
+  plotX: number,
+  plotY: number,
+  plotW: number,
+  plotH: number,
+  fs: GraphOptions['fontSize'],
+  font: GraphOptions['fontFamily'],
+  cf: string,
+) {
+  const sizes = data.points.map((p) => p.size).filter((s) => s > 0);
+  if (sizes.length === 0) return;
+
+  const maxSize = Math.max(...sizes);
+  if (maxSize === 0) return;
+
+  const steps = [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
+  const uniqueSteps = [...new Set(steps)].sort((a, b) => b - a);
+
+  const maxR = data.bubbleScale * 1.2;
+  const labelW = 50;
+  const pad = 14;
+  const boxW = maxR * 2 + labelW + pad * 2 + 20;
+  const boxH = maxR * 2 + pad * 2 + 10;
+
+  // 위치 계산
+  const pos = data.bubbleLegendPosition || 'bottom-right';
+  let boxX: number, boxY: number;
+  if (pos === 'top-left') { boxX = plotX + 10; boxY = plotY + 10; }
+  else if (pos === 'top-right') { boxX = plotX + plotW - boxW - 10; boxY = plotY + 10; }
+  else if (pos === 'bottom-left') { boxX = plotX + 10; boxY = plotY + plotH - boxH - 10; }
+  else { boxX = plotX + plotW - boxW - 10; boxY = plotY + plotH - boxH - 10; }
+
+  // 박스 배경
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  const circleX = boxX + pad + maxR;
+  const bottomCircleY = boxY + boxH - pad;
+
+  for (const size of uniqueSteps) {
+    const r = (size / maxSize) * maxR;
+    const cy = bottomCircleY - r;
+
+    // 원
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(circleX, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 점선 + 라벨
+    ctx.save();
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 2]);
+    const lineY = cy - r;
+    ctx.beginPath();
+    ctx.moveTo(circleX, lineY);
+    ctx.lineTo(circleX + maxR + 12, lineY);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#000';
+    ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(size), circleX + maxR + 16, lineY);
+  }
 }

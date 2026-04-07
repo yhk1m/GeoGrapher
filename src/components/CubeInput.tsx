@@ -24,7 +24,7 @@ export default function CubeInput({ data, onChange }: Props) {
 
   const addPoint = () => {
     const label = POINT_LABELS[data.points.length % POINT_LABELS.length];
-    onChange({ ...data, points: [...data.points, { x: 0, y: 0, z: 0, label }] });
+    onChange({ ...data, points: [...data.points, { x: 0, y: 0, z: 0, label, labelDx: 0, labelDy: 0 }] });
   };
 
   const removePoint = () => {
@@ -123,6 +123,26 @@ export default function CubeInput({ data, onChange }: Props) {
             ))}
           </tbody>
         </table>
+
+        {/* 유도선 오프셋 조정 */}
+        <div style={{ marginTop: 12 }}>
+          <label style={styles.label}>유도선 위치 조정</label>
+          {data.points.map((pt, i) => (
+            <div key={i} style={{ marginBottom: 8, padding: '6px 8px', background: '#F8F9FA', borderRadius: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 4 }}>{pt.label}</div>
+              <div style={styles.sliderRow}>
+                <span style={styles.sliderLabel}>X</span>
+                <input type="range" min={-80} max={80} value={pt.labelDx} onChange={(e) => { const points = data.points.map((p, j) => j === i ? { ...p, labelDx: Number(e.target.value) } : p); onChange({ ...data, points }); }} style={styles.slider} />
+                <span style={styles.sliderVal}>{pt.labelDx}</span>
+              </div>
+              <div style={styles.sliderRow}>
+                <span style={styles.sliderLabel}>Y</span>
+                <input type="range" min={-80} max={80} value={pt.labelDy} onChange={(e) => { const points = data.points.map((p, j) => j === i ? { ...p, labelDy: Number(e.target.value) } : p); onChange({ ...data, points }); }} style={styles.slider} />
+                <span style={styles.sliderVal}>{pt.labelDy}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

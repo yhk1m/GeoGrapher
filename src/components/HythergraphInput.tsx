@@ -47,6 +47,44 @@ export default function HythergraphInput({ data, onChange }: Props) {
 
   const active = data.series[activeSeries] || data.series[0];
 
+  const downloadTemplate = () => {
+    const header = '월,기온(°C),강수량(mm)';
+    const rows = MONTH_NAMES.map((_, i) => `${i + 1},${active.months[i].temp},${active.months[i].precip}`);
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `하이서그래프_${active.label}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const lines = text.trim().split(/\r?\n/).slice(1);
+      const months = [...active.months];
+      for (const line of lines) {
+        const cols = line.split(',');
+        const monthNum = parseInt(cols[0]);
+        if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) continue;
+        const idx = monthNum - 1;
+        const temp = parseFloat(cols[1]);
+        const precip = parseFloat(cols[2]);
+        if (!isNaN(temp)) months[idx] = { ...months[idx], temp };
+        if (!isNaN(precip)) months[idx] = { ...months[idx], precip };
+      }
+      const series = data.series.map((s, i) => i === activeSeries ? { ...s, months } : s);
+      onChange({ ...data, series });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div>
       {/* 모드 */}
@@ -157,7 +195,16 @@ export default function HythergraphInput({ data, onChange }: Props) {
 
       {/* 월별 데이터 (선택된 계열) */}
       <section>
-        <label style={styles.label}>{active.label} 월별 데이터</label>
+        <div style={styles.csvRow}>
+          <label style={styles.label}>{active.label} 월별 데이터</label>
+          <div style={styles.csvButtons}>
+            <button onClick={downloadTemplate} style={styles.csvBtn}>양식 다운로드</button>
+            <label style={styles.csvBtn}>
+              CSV 업로드
+              <input type="file" accept=".csv" onChange={handleCsvUpload} style={{ display: 'none' }} />
+            </label>
+          </div>
+        </div>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -201,4 +248,7 @@ const styles: Record<string, React.CSSProperties> = {
   th: { padding: '6px 4px', borderBottom: '2px solid #E5E7EB', textAlign: 'center' as const, fontSize: 11, fontWeight: 600, color: '#6B7280' },
   td: { padding: '3px 4px', borderBottom: '1px solid #F3F4F6', textAlign: 'center' as const, whiteSpace: 'nowrap' as const },
   cellInput: { width: 70, padding: '3px 5px', border: '1px solid #E5E7EB', borderRadius: 4, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", textAlign: 'right' as const, outline: 'none' },
+  csvRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  csvButtons: { display: 'flex', gap: 6 },
+  csvBtn: { padding: '4px 10px', fontSize: 11, borderRadius: 4, border: '1px solid #D1D5DB', background: '#fff', color: '#374151', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' },
 };

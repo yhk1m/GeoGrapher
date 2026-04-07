@@ -1,5 +1,5 @@
 // © 2026 김용현
-import { type ScatterGraphData, type ScatterMode } from '../data/types';
+import { type ScatterGraphData, type ScatterMode, type BubbleLegendPosition } from '../data/types';
 
 interface Props {
   data: ScatterGraphData;
@@ -71,6 +71,22 @@ export default function ScatterInput({ data, onChange }: Props) {
               min={10}
               max={80}
             />
+            <label style={{ ...styles.label, marginTop: 8 }}>범례 위치</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              {([['top-left', '좌상'], ['top-right', '우상'], ['bottom-left', '좌하'], ['bottom-right', '우하']] as [BubbleLegendPosition, string][]).map(([pos, label]) => (
+                <button
+                  key={pos}
+                  onClick={() => onChange({ ...data, bubbleLegendPosition: pos })}
+                  style={{
+                    padding: '4px 0', borderRadius: 4, border: '1px solid #D1D5DB',
+                    fontSize: 11, fontWeight: data.bubbleLegendPosition === pos ? 700 : 400,
+                    background: data.bubbleLegendPosition === pos ? '#1B2A4A' : '#fff',
+                    color: data.bubbleLegendPosition === pos ? '#fff' : '#374151',
+                    cursor: 'pointer',
+                  }}
+                >{label}</button>
+              ))}
+            </div>
           </div>
         )}
       </section>

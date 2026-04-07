@@ -32,6 +32,27 @@ export function clearCanvas(ctx: CanvasRenderingContext2D, w: number, h: number)
   ctx.fillRect(0, 0, w, h);
 }
 
+/** 줄바꿈(\n) 지원 텍스트 렌더링 */
+export function fillTextMultiline(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  lineHeight: number
+) {
+  const lines = text.split('\\n');
+  if (lines.length <= 1) {
+    ctx.fillText(text, x, y);
+    return;
+  }
+  // 세로 중앙 정렬: baseline이 middle인 경우 전체 블록 중앙에 맞춤
+  const totalH = (lines.length - 1) * lineHeight;
+  const startY = y - totalH / 2;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x, startY + i * lineHeight);
+  }
+}
+
 /** 적절한 눈금 간격을 자동 계산 */
 export function niceStep(range: number, maxTicks: number = 8): number {
   const rough = range / maxTicks;

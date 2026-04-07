@@ -1,4 +1,4 @@
-// © 2026 김용현
+// © 2026. 양정고등학교 김용현. All Rights Reserved.
 import { useState, useRef, useEffect } from 'react';
 import { type GraphType, GRAPH_LABELS } from '../data/types';
 
@@ -45,6 +45,9 @@ export default function Header({
       <div style={{ flex: 1 }} />
 
       <div style={styles.actions}>
+        <span style={styles.copyright}>
+          © 2026. 양정고등학교 김용현. All Rights Reserved. | <a href="https://bgnl.kr" target="_blank" rel="noopener noreferrer" style={styles.copyrightLink}>https://bgnl.kr</a>
+        </span>
         <button onClick={onToggleDrawer} style={styles.actionBtn} title={drawerOpen ? '드로어 닫기' : '드로어 열기'}>
           {drawerOpen ? '✕' : '☰'}
         </button>
@@ -143,6 +146,15 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'left' as const,
     cursor: 'pointer',
     whiteSpace: 'nowrap' as const,
+  },
+  copyright: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    whiteSpace: 'nowrap' as const,
+  },
+  copyrightLink: {
+    color: '#fff',
+    textDecoration: 'none',
   },
   actions: {
     display: 'flex',

@@ -31,7 +31,7 @@ export function renderDeviationBGraph(
       let b = 60;
       if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: 130,
@@ -165,11 +165,12 @@ export function renderDeviationBGraph(
       position: legendPos,
       plotX, plotY, plotW, plotH,
       fontSize: options.fontSize.dataLabel * 0.85 + 5,
+      rightGap: 80,
     });
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel });
 }
 
 function drawDevBYAxis(

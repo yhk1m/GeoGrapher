@@ -43,7 +43,7 @@ function renderStackedBar(
       let b = isVertical ? 70 : 60;
       if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: isVertical ? 80 : 100,
@@ -240,7 +240,7 @@ function renderStackedBar(
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }
 
 function renderPieChart(
@@ -263,7 +263,7 @@ function renderPieChart(
       let b = 50;
       if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: 60,
@@ -352,5 +352,5 @@ function renderPieChart(
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }

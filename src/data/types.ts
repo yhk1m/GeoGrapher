@@ -211,9 +211,12 @@ export interface ScatterPoint {
   label: string;
 }
 
+export type BubbleLegendPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 export interface ScatterGraphData {
   mode: ScatterMode;
   points: ScatterPoint[];
+  bubbleLegendPosition: BubbleLegendPosition;
   xLabel: string;
   yLabel: string;
   xUnit: string;
@@ -229,6 +232,7 @@ export interface ScatterGraphData {
 export function createDefaultScatterData(): ScatterGraphData {
   return {
     mode: 'normal',
+    bubbleLegendPosition: 'bottom-right',
     points: [
       { x: 10, y: 25, size: 50, label: 'A' },
       { x: 25, y: 40, size: 80, label: 'B' },
@@ -289,6 +293,8 @@ export interface CubePoint {
   y: number; // 0~1
   z: number; // 0~1
   label: string;
+  labelDx: number; // 유도선 X 오프셋
+  labelDy: number; // 유도선 Y 오프셋
 }
 
 export interface LabelOffset {
@@ -314,9 +320,9 @@ export interface CubeGraphData {
 export function createDefaultCubeData(): CubeGraphData {
   return {
     points: [
-      { x: 0, y: 1, z: 1, label: 'ㄱ' },
-      { x: 0, y: 0, z: 0, label: 'ㄴ' },
-      { x: 1, y: 0, z: 1, label: 'ㄷ' },
+      { x: 0, y: 1, z: 1, label: 'ㄱ', labelDx: 0, labelDy: 0 },
+      { x: 0, y: 0, z: 0, label: 'ㄴ', labelDx: 0, labelDy: 0 },
+      { x: 1, y: 0, z: 1, label: 'ㄷ', labelDx: 0, labelDy: 0 },
     ],
     xAxis: { name: 'X축', lowLabel: '낮음', highLabel: '높음', lowOffset: { x: 0, y: 0 }, highOffset: { x: 0, y: 0 } },
     yAxis: { name: 'Y축', lowLabel: '낮음', highLabel: '높음', lowOffset: { x: 0, y: 0 }, highOffset: { x: 0, y: 0 } },
@@ -356,7 +362,7 @@ export function createDefaultRadarData(): RadarGraphData {
 export interface GraphOptions {
   title: string;
   source: string;
-  footnote: string;
+  footnotes: string[];
   fontFamily: 'serif' | 'sans' | 'custom';
   customFont: string;
   fontSize: {
@@ -396,7 +402,7 @@ export function createDefaultGraphOptions(): GraphOptions {
   return {
     title: '',
     source: '',
-    footnote: '',
+    footnotes: [''],
     fontFamily: 'serif',
     customFont: '',
     fontSize: {

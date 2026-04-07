@@ -30,7 +30,7 @@ export function renderPyramidGraph(
       let b = 90;
       if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: 60,
@@ -259,5 +259,5 @@ export function renderPyramidGraph(
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }

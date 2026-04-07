@@ -92,7 +92,7 @@ export function renderHythergraph(
       let b = 90;
       if (showLegend && legendPos === 'bottom') b += 80;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: 80,
@@ -236,8 +236,8 @@ export function renderHythergraph(
         // 기호
         drawMarker(ctx, marker, cx, cy, 5);
 
-        // 월 라벨 (단일 계열일 때만)
-        if (data.series.length === 1) {
+        // 월 라벨 (모든 계열에 표시)
+        {
           ctx.fillStyle = '#000';
           ctx.font = getFont(fs.dataLabel, font, cf, 'bold');
           ctx.textAlign = 'left';
@@ -347,7 +347,7 @@ export function renderHythergraph(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 function formatTick(v: number): string {

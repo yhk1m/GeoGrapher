@@ -70,7 +70,7 @@ export function renderCubeGraph(
   const topPad = options.title ? 100 : 60;
   let bottomPad = 40;
   if (options.source) bottomPad += 30;
-  if (options.footnote) bottomPad += 25;
+  bottomPad += options.footnotes.filter(f => f.trim()).length * 22;
 
   const availW = w - 240;
   const availH = h - topPad - bottomPad;
@@ -113,30 +113,53 @@ export function renderCubeGraph(
   drawAxes(ctx, data, cx, cy, scale, font, cf, fs);
 
   // 데이터 포인트
+  // 큐브 중심 (2D)
+  const cubeCenter2D = project(0.5, 0.5, 0.5, cx, cy, scale);
+
   for (const pt of data.points) {
-    const [px, py] = project(pt.x, pt.y, pt.z, cx, cy, scale);
+    // 라벨 매핑: 사용자 X=오른쪽(project의 z), Z=깊이(project의 x)
+    const [px, py] = project(pt.z, pt.y, pt.x, cx, cy, scale);
 
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(px, py, 16, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    // 포인트 (채운 원, 이전 크기)
+    ctx.fillStyle = '#000';
     ctx.beginPath();
     ctx.arc(px, py, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 유도선 방향: 자동(큐브 중심에서 바깥으로) + 수동 오프셋
+    let autoDx = px - cubeCenter2D[0];
+    let autoDy = py - cubeCenter2D[1];
+    const len = Math.sqrt(autoDx * autoDx + autoDy * autoDy) || 1;
+    autoDx = (autoDx / len) * 40;
+    autoDy = (autoDy / len) * 40;
+
+    const dx = autoDx + pt.labelDx;
+    const dy = autoDy + pt.labelDy;
+    const lx = px + dx;
+    const ly = py + dy;
+
+    // 유도선
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(lx, ly);
     ctx.stroke();
 
+    // 라벨
     ctx.fillStyle = '#000';
-    ctx.font = getFont(fs.dataLabel, font, cf, 'bold');
-    ctx.textAlign = 'center';
+    ctx.font = getFont(fs.dataLabel + 10, font, cf, 'bold');
+    ctx.textAlign = dx >= 0 ? 'left' : 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(pt.label, px, py);
+    ctx.fillText(pt.label, lx + (dx >= 0 ? 4 : -4), ly);
   }
 
-  // 큐브 영역 기준으로 제목/출처 배치
-  const plotX = 80;
-  const plotW = w - 160;
+  // 큐브 좌우 범위 기준으로 정렬
+  const allX = v2.map(([vx]) => vx);
+  const cubeLeft = Math.min(...allX) - 30;
+  const cubeRight = Math.max(...allX) + 30;
+  const plotX = cubeLeft;
+  const plotW = cubeRight - cubeLeft;
 
   if (options.title) {
     const yAxisTop = project(0, 1.25, 0, cx, cy, scale);
@@ -147,7 +170,11 @@ export function renderCubeGraph(
     ctx.fillText(options.title, w / 2, yAxisTop[1] - 50);
   }
 
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: fs.dataLabel, canvasWidth: w });
+  // Z축 이름/높음 라벨 아래 기준
+  const zAxisEnd = project(1.25, 0, 0, cx, cy, scale);
+  const zHighRef = project(1, 0, 0, cx, cy, scale);
+  const sourceY = Math.max(zAxisEnd[1] + 20 + fs.axisLabel, zHighRef[1] + 10 + fs.axisLabel * 0.9) + 47;
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: sourceY, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel });
 }
 
 function drawArrow(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {

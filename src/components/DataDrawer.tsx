@@ -148,14 +148,66 @@ export default function DataDrawer({
           placeholder="출처 입력"
           style={styles.input}
         />
-        <label style={{ ...styles.label, marginTop: 8 }}>각주</label>
-        <input
-          type="text"
-          value={options.footnote}
-          onChange={(e) => onOptionsChange({ ...options, footnote: e.target.value })}
-          placeholder="각주 입력"
-          style={styles.input}
-        />
+        <div style={{ ...styles.label, marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>각주</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={() => {
+                const f = [...options.footnotes];
+                if (f.length > 1) f.pop();
+                onOptionsChange({ ...options, footnotes: f });
+              }}
+              style={styles.smallFootnoteBtn}
+              disabled={options.footnotes.length <= 1}
+            >−</button>
+            <button
+              onClick={() => onOptionsChange({ ...options, footnotes: [...options.footnotes, ''] })}
+              style={styles.smallFootnoteBtn}
+            >+</button>
+          </div>
+        </div>
+        {options.footnotes.map((fn, i) => (
+          <input
+            key={i}
+            type="text"
+            value={fn}
+            onChange={(e) => {
+              const footnotes = options.footnotes.map((f, j) => j === i ? e.target.value : f);
+              onOptionsChange({ ...options, footnotes });
+            }}
+            placeholder={`각주 ${i + 1}`}
+            style={{ ...styles.input, marginTop: i > 0 ? 4 : 0 }}
+          />
+        ))}
+      </section>
+
+      {/* 글꼴 선택 */}
+      <section style={styles.section}>
+        <label style={styles.label}>글꼴</label>
+        <div style={styles.modeGroup}>
+          {(['serif', 'sans', 'custom'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => onOptionsChange({ ...options, fontFamily: f })}
+              style={{
+                ...styles.modeBtn,
+                background: options.fontFamily === f ? '#1B2A4A' : '#fff',
+                color: options.fontFamily === f ? '#fff' : '#374151',
+              }}
+            >
+              {f === 'serif' ? '세리프' : f === 'sans' ? '산세리프' : '사용자 지정'}
+            </button>
+          ))}
+        </div>
+        {options.fontFamily === 'custom' && (
+          <input
+            type="text"
+            value={options.customFont}
+            onChange={(e) => onOptionsChange({ ...options, customFont: e.target.value })}
+            placeholder="글꼴명 입력 (예: 바탕, HY신명조)"
+            style={{ ...styles.input, marginTop: 6 }}
+          />
+        )}
       </section>
 
       {/* 데이터 라벨 토글 */}
@@ -170,8 +222,8 @@ export default function DataDrawer({
         </label>
       </section>
 
-      {/* 범례 on/off + 위치 */}
-      <section style={styles.section}>
+      {/* 범례 on/off + 위치 (산점도/버블은 자체 범례 사용) */}
+      {graphType !== 'scatter' && graphType !== 'cube' && <section style={styles.section}>
         <label style={styles.toggleRow}>
           <span>범례 표시</span>
           <input
@@ -217,7 +269,7 @@ export default function DataDrawer({
             </div>
           </>
         )}
-      </section>
+      </section>}
 
       {/* 그래프별 데이터 입력 */}
       {graphType === 'climate' && climateMode === 'normal' && (
@@ -299,6 +351,20 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     fontSize: 13,
     cursor: 'pointer',
+  },
+  smallFootnoteBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 3,
+    border: '1px solid #D1D5DB',
+    background: '#fff',
+    fontSize: 14,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    lineHeight: 1,
   },
   modeGroup: {
     display: 'flex',

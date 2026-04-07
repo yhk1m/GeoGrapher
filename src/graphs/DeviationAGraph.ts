@@ -39,7 +39,7 @@ export function renderDeviationAGraph(
       let b = 60;
       if (showLegend && legendPos === 'bottom') b += 60;
       if (options.source) b += 30;
-      if (options.footnote) b += 25;
+      b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
     left: 130,
@@ -138,18 +138,20 @@ export function renderDeviationAGraph(
     ctx.strokeRect(bx, barTop, barWidth, barH);
   }
 
-  // 기온 편차 꺾은선
-  ctx.strokeStyle = '#000';
-  ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  for (let s = 0; s < totalSlots; s++) {
-    const i = indices[s];
-    const cx = plotX + slotW * s + slotW / 2;
-    const y = plotY + plotH - ((tempDevs[i] - tempAxis.min) / (tempAxis.max - tempAxis.min)) * plotH;
-    if (s === 0) ctx.moveTo(cx, y);
-    else ctx.lineTo(cx, y);
+  // 기온 편차 꺾은선 (12개월일 때만)
+  if (data.monthInterval === 12) {
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let s = 0; s < totalSlots; s++) {
+      const i = indices[s];
+      const cx = plotX + slotW * s + slotW / 2;
+      const y = plotY + plotH - ((tempDevs[i] - tempAxis.min) / (tempAxis.max - tempAxis.min)) * plotH;
+      if (s === 0) ctx.moveTo(cx, y);
+      else ctx.lineTo(cx, y);
+    }
+    ctx.stroke();
   }
-  ctx.stroke();
 
   // 기온 점
   for (let s = 0; s < totalSlots; s++) {
@@ -176,16 +178,17 @@ export function renderDeviationAGraph(
       ctx,
       items: [
         { type: 'rect', fillStyle: '#888', strokeStyle: '#444', label: legendLabels[0] },
-        { type: 'line', fillStyle: '#000', label: legendLabels[1] },
+        { type: data.monthInterval === 12 ? 'line' : 'circle', fillStyle: '#000', label: legendLabels[1] },
       ],
       position: legendPos,
       plotX, plotY, plotW, plotH,
       fontSize: options.fontSize.dataLabel * 0.85 + 5,
+      rightGap: 80,
     });
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnote: options.footnote, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel });
 }
 
 function drawDeviationYAxis(
