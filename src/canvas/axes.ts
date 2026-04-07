@@ -1,0 +1,146 @@
+// © 2026 김용현
+import { type Padding, getFont } from './renderer';
+
+interface AxisOptions {
+  ctx: CanvasRenderingContext2D;
+  padding: Padding;
+  width: number;
+  height: number;
+  fontFamily: 'serif' | 'sans' | 'custom';
+  customFont?: string;
+  tickFontSize: number;
+  labelFontSize: number;
+}
+
+interface YAxisParams extends AxisOptions {
+  min: number;
+  max: number;
+  step: number;
+  label: string;
+  side: 'left' | 'right';
+  drawGrid?: boolean;
+}
+
+interface XAxisParams extends AxisOptions {
+  labels: string[];
+  indices?: number[];
+}
+
+const plotArea = (p: Padding, w: number, h: number) => ({
+  x: p.left,
+  y: p.top,
+  w: w - p.left - p.right,
+  h: h - p.top - p.bottom,
+});
+
+export function drawYAxis({
+  ctx, padding, width, height,
+  min, max, step, label, side,
+  fontFamily, customFont, tickFontSize, labelFontSize,
+  drawGrid = false,
+}: YAxisParams) {
+  const plot = plotArea(padding, width, height);
+  const x = side === 'left' ? plot.x : plot.x + plot.w;
+
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, plot.y);
+  ctx.lineTo(x, plot.y + plot.h);
+  ctx.stroke();
+
+  // 눈금 — 모두 bold
+  ctx.fillStyle = '#000';
+  ctx.font = getFont(tickFontSize, fontFamily, customFont, 'bold');
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = side === 'left' ? 'right' : 'left';
+
+  const tickCount = Math.round((max - min) / step);
+  for (let i = 0; i <= tickCount; i++) {
+    const val = min + i * step;
+    const y = plot.y + plot.h - ((val - min) / (max - min)) * plot.h;
+
+    // 눈금 선
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (side === 'left') {
+      ctx.moveTo(x - 6, y);
+      ctx.lineTo(x, y);
+    } else {
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + 6, y);
+    }
+    ctx.stroke();
+
+    // 격자선
+    if (drawGrid && i > 0 && i < tickCount) {
+      ctx.save();
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(plot.x, y);
+      ctx.lineTo(plot.x + plot.w, y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 숫자
+    const tx = side === 'left' ? x - 12 : x + 12;
+    ctx.fillText(formatTick(val), tx, y);
+  }
+
+  // 축 라벨 (축 상단, 숫자 열에 맞춤)
+  ctx.save();
+  ctx.font = getFont(labelFontSize, fontFamily, customFont, 'bold');
+  ctx.fillStyle = '#000';
+  ctx.textBaseline = 'bottom';
+  const labelX = side === 'left' ? x - 12 : x + 12;
+  ctx.textAlign = side === 'left' ? 'right' : 'left';
+  ctx.fillText(label, labelX, plot.y - 16);
+  ctx.restore();
+}
+
+export function drawXAxis({
+  ctx, padding, width, height,
+  labels, indices,
+  fontFamily, customFont, tickFontSize,
+}: XAxisParams) {
+  const plot = plotArea(padding, width, height);
+  const y = plot.y + plot.h;
+
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(plot.x, y);
+  ctx.lineTo(plot.x + plot.w, y);
+  ctx.stroke();
+
+  ctx.fillStyle = '#000';
+  ctx.font = getFont(tickFontSize, fontFamily, customFont, 'bold');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+
+  const showIndices = indices ?? labels.map((_, i) => i);
+  const slotWidth = plot.w / labels.length;
+
+  for (const i of showIndices) {
+    if (i < 0 || i >= labels.length) continue;
+    const cx = plot.x + slotWidth * i + slotWidth / 2;
+
+    // 눈금선
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx, y + 6);
+    ctx.stroke();
+
+    // 라벨
+    ctx.fillText(labels[i], cx, y + 12);
+  }
+}
+
+function formatTick(val: number): string {
+  if (Number.isInteger(val)) return val.toString();
+  return val.toFixed(1);
+}

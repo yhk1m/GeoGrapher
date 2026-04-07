@@ -1,0 +1,60 @@
+/* © 2026 김용현 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --header-bg: #1B2A4A;
+  --header-text: #ffffff;
+  --bg-main: #ffffff;
+  --bg-drawer: #F8F9FA;
+  --border: #E5E7EB;
+  --accent: #1B2A4A;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --tab-inactive: rgba(255, 255, 255, 0.08);
+  --tab-active: rgba(255, 255, 255, 0.2);
+  --font-ui: 'Noto Sans KR', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--bg-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+input[type="number"] {
+  font-family: var(--font-mono);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
