@@ -30,6 +30,7 @@ export default function GuidePage({ onNavigate }: Props) {
             <p style={styles.cardDesc}>
               기온(꺾은선, 좌축)과 강수량(막대, 우축)을 함께 표시합니다.
               월 표시 간격(12/4/2개월)을 선택할 수 있고, <strong>편차 모드</strong>로 월별 시계열 편차 또는 지역별 비교 편차를 표현할 수 있습니다.
+              축 범위를 수동 설정할 때 <strong>단위 간격</strong>도 지정 가능합니다.
             </p>
           </div>
 
@@ -54,15 +55,18 @@ export default function GuidePage({ onNavigate }: Props) {
             <h3 style={styles.cardTitle}>100% 막대/원 그래프</h3>
             <p style={styles.cardDesc}>
               100% 막대 그래프와 원 그래프를 토글로 전환합니다.
-              막대는 가로/세로 방향 선택 가능하며, 최대 11개 항목을 흑백 패턴(단색, 사선, 격자, 도트 등)으로 구분합니다.
+              막대는 가로/세로 방향 선택 가능하며, 축 눈금 간격(5/10/20/25/50)을 설정할 수 있습니다.
+              원 그래프는 <strong>360° 회전</strong>과 <strong>크기 조절</strong>(30~200%)을 지원합니다.
+              최대 11개 항목을 흑백 패턴(단색, 사선, 격자, 도트 등)으로 구분합니다.
             </p>
           </div>
 
           <div style={styles.card} onClick={() => onNavigate('absbar')}>
             <h3 style={styles.cardTitle}>절댓값 막대 그래프</h3>
             <p style={styles.cardDesc}>
-              절댓값(실수치)을 막대로 표시합니다. 단일 항목 또는 누적 모드를 지원하며,
-              세로/가로 방향을 선택할 수 있습니다. 축 범위와 단위를 자유롭게 설정 가능합니다.
+              절댓값(실수치)을 막대로 표시합니다. 단일 항목(그룹 막대) 또는 <strong>누적 모드</strong>를 지원하며,
+              세로/가로 방향을 선택할 수 있습니다. 축 범위·단위 간격을 자유롭게 설정하고,
+              <strong>최댓값에 맞추기</strong>로 데이터 최댓값을 축 끝에 정확히 맞출 수 있습니다.
             </p>
           </div>
 
