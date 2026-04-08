@@ -108,7 +108,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
 // ── 누적 차트 채움 시스템 ─────────────────────────────
 
 // 항목 1~3: 단색 그레이스케일, 항목 4: 흰색, 항목 5+: 패턴
-const SOLID_FILLS = ['#333', '#666', '#999', '#fff'];
+const SOLID_FILLS = ['#333', '#999', '#666', '#fff'];
 
 const PATTERN_ORDER: PatternType[] = [
   'diagonal',
