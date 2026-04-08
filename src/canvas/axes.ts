@@ -55,9 +55,17 @@ export function drawYAxis({
   ctx.textBaseline = 'middle';
   ctx.textAlign = side === 'left' ? 'right' : 'left';
 
-  const tickCount = Math.round((max - min) / step);
-  for (let i = 0; i <= tickCount; i++) {
-    const val = min + i * step;
+  // 눈금 값 배열 생성: min부터 step 간격, max는 항상 포함
+  const ticks: number[] = [];
+  for (let val = min; val < max - step * 1e-9; val += step) {
+    ticks.push(Math.abs(val) < 1e-9 ? 0 : val);
+  }
+  if (ticks.length === 0 || Math.abs(ticks[ticks.length - 1] - max) > 1e-9) {
+    ticks.push(max);
+  }
+
+  for (let i = 0; i < ticks.length; i++) {
+    const val = ticks[i];
     const y = plot.y + plot.h - ((val - min) / (max - min)) * plot.h;
 
     // 눈금 선
@@ -73,7 +81,7 @@ export function drawYAxis({
     ctx.stroke();
 
     // 격자선
-    if (drawGrid && i > 0 && i < tickCount) {
+    if (drawGrid && i > 0 && i < ticks.length - 1) {
       ctx.save();
       ctx.strokeStyle = '#ccc';
       ctx.lineWidth = 0.5;
@@ -97,7 +105,7 @@ export function drawYAxis({
   ctx.textBaseline = 'bottom';
   const labelX = side === 'left' ? x - 12 : x + 12;
   ctx.textAlign = side === 'left' ? 'right' : 'left';
-  ctx.fillText(label, labelX, plot.y - 16);
+  ctx.fillText(label, labelX, plot.y - tickFontSize * 0.5 - 8);
   ctx.restore();
 }
 

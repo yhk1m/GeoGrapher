@@ -38,7 +38,7 @@ function renderStackedBar(
 
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: isVertical ? 60 + legendW : 130 + legendW,
+    right: isVertical ? 60 + legendW : 160 + legendW,
     bottom: (() => {
       let b = isVertical ? 70 : 60;
       if (showLegend && legendPos === 'bottom') b += 60;
@@ -63,19 +63,22 @@ function renderStackedBar(
   ctx.lineWidth = 2;
 
   if (isVertical) {
-    // 세로 누적 막대
+    // 세로 누적 막대 — 사각 테두리
     ctx.beginPath();
     ctx.moveTo(plotX, plotY);
     ctx.lineTo(plotX, plotY + plotH);
     ctx.lineTo(plotX + plotW, plotY + plotH);
+    ctx.lineTo(plotX + plotW, plotY);
+    ctx.lineTo(plotX, plotY);
     ctx.stroke();
 
     // Y축 눈금 (0~100)
+    const stepV = data.axisStep ?? 20;
     ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
     ctx.fillStyle = '#000';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    for (let v = 0; v <= 100; v += 20) {
+    for (let v = 0; v <= 100; v += stepV) {
       const y = plotY + plotH - (v / 100) * plotH;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -140,22 +143,22 @@ function renderStackedBar(
       ctx.fillText(data.categories[c].label, cx, plotY + plotH + 12);
     }
   } else {
-    // 가로 누적 막대
+    // 가로 누적 막대 — 사각 테두리
     ctx.beginPath();
     ctx.moveTo(plotX, plotY);
     ctx.lineTo(plotX, plotY + plotH);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(plotX, plotY + plotH);
     ctx.lineTo(plotX + plotW, plotY + plotH);
+    ctx.lineTo(plotX + plotW, plotY);
+    ctx.lineTo(plotX, plotY);
     ctx.stroke();
 
     // X축 눈금 (0~100)
+    const stepH = data.axisStep ?? 20;
     ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
     ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    for (let v = 0; v <= 100; v += 20) {
+    for (let v = 0; v <= 100; v += stepH) {
       const x = plotX + (v / 100) * plotW;
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -177,11 +180,11 @@ function renderStackedBar(
       }
     }
 
-    // 단위
+    // 단위 (축 맨 오른쪽)
     ctx.font = getFont(options.fontSize.axisLabel, font, customFont, 'bold');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(data.unit, plotX + plotW + 8, plotY + plotH + 10);
+    ctx.fillText(data.unit, plotX + plotW + 30, plotY + plotH + 10);
 
     // 막대
     const barArea = plotH / n;
@@ -278,15 +281,35 @@ function renderPieChart(
   const n = data.categories.length;
   const sCount = data.seriesLabels.length;
 
-  // 원 그래프: 카테고리별 원 나란히 배치
-  const pieArea = plotW / n;
-  const maxR = Math.min(pieArea * 0.4, plotH * 0.4);
+  // 원 그래프: 카테고리별 원 그리드 배치 (겹침 방지)
+  const pieScale = (data.pieScale ?? 100) / 100;
+  const rotationRad = ((data.pieRotation ?? 0) * Math.PI) / 180;
+  const minGap = 24;
+  const labelSpace = options.fontSize.tick + 16;
+
+  // 기준 반지름 (scale=100%, 한 줄 배치)
+  const singleColW = plotW / n;
+  const refR = Math.min(singleColW * 0.4, (plotH - labelSpace) * 0.4);
+  const desiredR = refR * pieScale;
+
+  // 그리드: 열 수 계산 (겹치지 않도록)
+  const cols = n === 1
+    ? 1
+    : Math.max(1, Math.min(n, Math.floor(plotW / (desiredR * 2 + minGap))));
+  const rows = Math.ceil(n / cols);
+  const colW = plotW / cols;
+  const rowH = plotH / rows;
+
+  // 셀에 맞게 반지름 제한
+  const maxR = Math.min(desiredR, (colW - minGap) / 2, (rowH - labelSpace - minGap) / 2);
 
   for (let c = 0; c < n; c++) {
-    const cx = plotX + pieArea * c + pieArea / 2;
-    const cy = plotY + plotH / 2;
+    const col = c % cols;
+    const row = Math.floor(c / cols);
+    const cx = plotX + colW * col + colW / 2;
+    const cy = plotY + rowH * row + (rowH - labelSpace) / 2;
     const total = data.categories[c].values.reduce((a, b) => a + b, 0);
-    let startAngle = -Math.PI / 2;
+    let startAngle = -Math.PI / 2 + rotationRad;
 
     for (let s = 0; s < sCount; s++) {
       const val = data.categories[c].values[s] || 0;

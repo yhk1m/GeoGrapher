@@ -56,17 +56,19 @@ export function renderClimateGraph(
   // 축 범위 계산
   const tempAxis = data.tempRange.auto
     ? autoRange(temps, 6)
-    : { min: data.tempRange.min, max: data.tempRange.max, step: 0 };
-  if (!data.tempRange.auto && tempAxis.step === 0) {
-    tempAxis.step = Math.max(1, Math.round((tempAxis.max - tempAxis.min) / 6));
-  }
+    : {
+        min: data.tempRange.min,
+        max: data.tempRange.max,
+        step: data.tempRange.step || Math.max(1, Math.round((data.tempRange.max - data.tempRange.min) / 6)),
+      };
 
   const precipAxis = data.precipRange.auto
     ? autoRange(precips.filter((v) => v > 0).length > 0 ? precips : [0, 100], 6)
-    : { min: data.precipRange.min, max: data.precipRange.max, step: 0 };
-  if (!data.precipRange.auto && precipAxis.step === 0) {
-    precipAxis.step = Math.max(1, Math.round((precipAxis.max - precipAxis.min) / 6));
-  }
+    : {
+        min: data.precipRange.min,
+        max: data.precipRange.max,
+        step: data.precipRange.step || Math.max(1, Math.round((data.precipRange.max - data.precipRange.min) / 6)),
+      };
   if (precipAxis.min < 0) precipAxis.min = 0;
 
   const font = options.fontFamily;

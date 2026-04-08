@@ -14,6 +14,7 @@ import {
   type PyramidGraphData,
   type TernaryGraphData,
   type StackedGraphData,
+  type AbsBarGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -26,6 +27,7 @@ import {
   createDefaultPyramidData,
   createDefaultTernaryData,
   createDefaultStackedData,
+  createDefaultAbsBarData,
   createDefaultScatterData,
   createDefaultHythergraphData,
   createDefaultCubeData,
@@ -46,6 +48,7 @@ export default function App() {
   const [pyramidData, setPyramidData] = useState<PyramidGraphData>(createDefaultPyramidData);
   const [ternaryData, setTernaryData] = useState<TernaryGraphData>(createDefaultTernaryData);
   const [stackedData, setStackedData] = useState<StackedGraphData>(createDefaultStackedData);
+  const [absBarData, setAbsBarData] = useState<AbsBarGraphData>(createDefaultAbsBarData);
   const [scatterData, setScatterData] = useState<ScatterGraphData>(createDefaultScatterData);
   const [hythergraphData, setHythergraphData] = useState<HythergraphData>(createDefaultHythergraphData);
   const [cubeData, setCubeData] = useState<CubeGraphData>(createDefaultCubeData);
@@ -80,6 +83,7 @@ export default function App() {
               pyramidData={pyramidData}
               ternaryData={ternaryData}
               stackedData={stackedData}
+              absBarData={absBarData}
               scatterData={scatterData}
               hythergraphData={hythergraphData}
               cubeData={cubeData}
@@ -103,6 +107,8 @@ export default function App() {
               onTernaryDataChange={setTernaryData}
               stackedData={stackedData}
               onStackedDataChange={setStackedData}
+              absBarData={absBarData}
+              onAbsBarDataChange={setAbsBarData}
               scatterData={scatterData}
               onScatterDataChange={setScatterData}
               hythergraphData={hythergraphData}
@@ -129,6 +135,7 @@ export default function App() {
           pyramidData={pyramidData}
           ternaryData={ternaryData}
           stackedData={stackedData}
+          absBarData={absBarData}
           scatterData={scatterData}
           hythergraphData={hythergraphData}
           cubeData={cubeData}

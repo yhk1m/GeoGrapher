@@ -1,12 +1,12 @@
 // © 2026 김용현
-import { type StackedGraphData, type StackedDisplayMode, type StackedBarDirection } from '../data/types';
+import { type AbsBarGraphData, type AbsBarDirection } from '../data/types';
 
 interface Props {
-  data: StackedGraphData;
-  onChange: (data: StackedGraphData) => void;
+  data: AbsBarGraphData;
+  onChange: (data: AbsBarGraphData) => void;
 }
 
-export default function StackedInput({ data, onChange }: Props) {
+export default function AbsBarInput({ data, onChange }: Props) {
   const updateValue = (catIdx: number, serIdx: number, value: string) => {
     const num = parseFloat(value);
     const categories = data.categories.map((c, ci) => {
@@ -47,116 +47,118 @@ export default function StackedInput({ data, onChange }: Props) {
   };
 
   const removeSeries = () => {
-    if (data.seriesLabels.length <= 2) return;
+    if (data.seriesLabels.length <= 1) return;
     const seriesLabels = data.seriesLabels.slice(0, -1);
     const categories = data.categories.map((c) => ({ ...c, values: c.values.slice(0, -1) }));
     onChange({ ...data, seriesLabels, categories });
   };
 
+  const updateRange = (field: 'min' | 'max' | 'step', value: string) => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return;
+    if (field === 'step' && num <= 0) return;
+    onChange({ ...data, yRange: { ...data.yRange, [field]: num, auto: false } });
+  };
+
   return (
     <div>
-      {/* 표시 모드 */}
+      {/* 막대 방향 */}
       <section style={styles.section}>
-        <label style={styles.label}>표시 모드</label>
+        <label style={styles.label}>막대 방향</label>
         <div style={styles.radioGroup}>
-          {(['bar', 'pie'] as StackedDisplayMode[]).map((m) => (
-            <label key={m} style={styles.radio}>
+          {(['vertical', 'horizontal'] as AbsBarDirection[]).map((d) => (
+            <label key={d} style={styles.radio}>
               <input
                 type="radio"
-                checked={data.displayMode === m}
-                onChange={() => onChange({ ...data, displayMode: m })}
+                checked={data.barDirection === d}
+                onChange={() => onChange({ ...data, barDirection: d })}
               />
-              <span>{m === 'bar' ? '100% 막대' : '원 그래프'}</span>
+              <span>{d === 'vertical' ? '세로' : '가로'}</span>
             </label>
           ))}
         </div>
       </section>
 
-      {/* 막대 방향 (막대 모드일 때만) */}
-      {data.displayMode === 'bar' && (
-        <section style={styles.section}>
-          <label style={styles.label}>막대 방향</label>
-          <div style={styles.radioGroup}>
-            {(['vertical', 'horizontal'] as StackedBarDirection[]).map((d) => (
-              <label key={d} style={styles.radio}>
-                <input
-                  type="radio"
-                  checked={data.barDirection === d}
-                  onChange={() => onChange({ ...data, barDirection: d })}
-                />
-                <span>{d === 'vertical' ? '세로' : '가로'}</span>
-              </label>
-            ))}
-          </div>
-          <label style={{ ...styles.label, marginTop: 10 }}>축 단위 설정</label>
-          <select
-            value={data.axisStep ?? 20}
-            onChange={(e) => onChange({ ...data, axisStep: Number(e.target.value) })}
-            style={{ padding: '4px 8px', border: '1px solid #E5E7EB', borderRadius: 4, fontSize: 13 }}
-          >
-            {[5, 10, 20, 25, 50].map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
-        </section>
-      )}
+      {/* 누적 여부 */}
+      <section style={styles.section}>
+        <label style={styles.toggleRow}>
+          <span>누적 모드</span>
+          <input
+            type="checkbox"
+            checked={data.stacked}
+            onChange={(e) => onChange({ ...data, stacked: e.target.checked })}
+          />
+        </label>
+      </section>
 
-      {/* 원 설정 (원 모드일 때만) */}
-      {data.displayMode === 'pie' && (
-        <section style={styles.section}>
-          <label style={styles.label}>원 회전 (°)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* 축 범위 */}
+      <section style={styles.section}>
+        <label style={styles.label}>축 범위</label>
+        <div style={styles.rangeRow}>
+          <label style={styles.toggleRow}>
             <input
-              type="range"
-              min={0}
-              max={360}
-              value={data.pieRotation ?? 0}
-              onChange={(e) => onChange({ ...data, pieRotation: Number(e.target.value) })}
-              style={{ flex: 1 }}
+              type="checkbox"
+              checked={data.yRange.auto}
+              onChange={(e) => onChange({ ...data, yRange: { ...data.yRange, auto: e.target.checked } })}
             />
-            <input
-              type="number"
-              min={0}
-              max={360}
-              value={data.pieRotation ?? 0}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                onChange({ ...data, pieRotation: isNaN(v) ? 0 : Math.max(0, Math.min(360, v)) });
-              }}
-              style={{ ...styles.cellInput, width: 56 }}
-            />
-          </div>
-          <label style={{ ...styles.label, marginTop: 10 }}>원 크기 (%)</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input
-              type="range"
-              min={30}
-              max={200}
-              value={data.pieScale ?? 100}
-              onChange={(e) => onChange({ ...data, pieScale: Number(e.target.value) })}
-              style={{ flex: 1 }}
-            />
-            <input
-              type="number"
-              min={30}
-              max={200}
-              value={data.pieScale ?? 100}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                onChange({ ...data, pieScale: isNaN(v) ? 100 : Math.max(30, Math.min(200, v)) });
-              }}
-              style={{ ...styles.cellInput, width: 56 }}
-            />
-          </div>
-        </section>
-      )}
+            <span>자동</span>
+          </label>
+          {data.yRange.auto && (
+            <label style={styles.toggleRow}>
+              <input
+                type="checkbox"
+                checked={data.fitMax ?? false}
+                onChange={(e) => onChange({ ...data, fitMax: e.target.checked })}
+              />
+              <span>최댓값에 맞추기</span>
+            </label>
+          )}
+          {!data.yRange.auto && (
+            <div style={styles.rangeInputs}>
+              <input
+                type="number"
+                value={data.yRange.min}
+                onChange={(e) => updateRange('min', e.target.value)}
+                style={styles.numInput}
+                placeholder="최소"
+              />
+              <span>~</span>
+              <input
+                type="number"
+                value={data.yRange.max}
+                onChange={(e) => updateRange('max', e.target.value)}
+                style={styles.numInput}
+                placeholder="최대"
+              />
+              <span style={{ marginLeft: 6, fontSize: 12, color: '#6B7280' }}>단위</span>
+              <input
+                type="number"
+                value={data.yRange.step ?? ''}
+                onChange={(e) => updateRange('step', e.target.value)}
+                style={styles.numInput}
+                placeholder="자동"
+                min={1}
+              />
+            </div>
+          )}
+        </div>
+
+        <label style={{ ...styles.label, marginTop: 8 }}>단위 표기</label>
+        <input
+          type="text"
+          value={data.unit}
+          onChange={(e) => onChange({ ...data, unit: e.target.value })}
+          placeholder="예: (명), (만 톤) 등"
+          style={styles.unitInput}
+        />
+      </section>
 
       {/* 항목(시리즈) 관리 */}
       <section style={styles.section}>
         <div style={styles.headerRow}>
           <label style={styles.label}>항목 (시리즈)</label>
           <div style={styles.btnGroup}>
-            <button onClick={removeSeries} style={styles.smallBtn} disabled={data.seriesLabels.length <= 2}>−</button>
+            <button onClick={removeSeries} style={styles.smallBtn} disabled={data.seriesLabels.length <= 1}>−</button>
             <span style={{ fontSize: 12, color: '#6B7280' }}>{data.seriesLabels.length}개</span>
             <button onClick={addSeries} style={styles.smallBtn} disabled={data.seriesLabels.length >= 11}>+</button>
           </div>
@@ -184,7 +186,6 @@ export default function StackedInput({ data, onChange }: Props) {
             <button onClick={addCategory} style={styles.smallBtn}>+</button>
           </div>
         </div>
-        {/* 항목 6개까지 첫 번째 테이블 */}
         <table style={styles.table}>
           <thead>
             <tr>
@@ -220,7 +221,6 @@ export default function StackedInput({ data, onChange }: Props) {
             ))}
           </tbody>
         </table>
-        {/* 항목 7개 이상일 때 두 번째 테이블 */}
         {data.seriesLabels.length > 6 && (
           <table style={{ ...styles.table, marginTop: 12 }}>
             <thead>
@@ -286,6 +286,40 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     fontSize: 13,
     cursor: 'pointer',
+  },
+  toggleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 13,
+    cursor: 'pointer',
+  },
+  rangeRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  rangeInputs: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 13,
+  },
+  numInput: {
+    width: 70,
+    padding: '4px 8px',
+    border: '1px solid #E5E7EB',
+    borderRadius: 4,
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono', monospace",
+    textAlign: 'right' as const,
+  },
+  unitInput: {
+    width: '100%',
+    padding: '4px 8px',
+    border: '1px solid #E5E7EB',
+    borderRadius: 4,
+    fontSize: 13,
   },
   headerRow: {
     display: 'flex',

@@ -64,11 +64,12 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
 
   const updateRange = (
     axis: 'tempRange' | 'precipRange',
-    field: 'min' | 'max',
+    field: 'min' | 'max' | 'step',
     value: string
   ) => {
     const num = parseFloat(value);
     if (isNaN(num)) return;
+    if (field === 'step' && num <= 0) return;
     onChange({
       ...data,
       [axis]: { ...data[axis], [field]: num, auto: false },
@@ -126,6 +127,15 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
                 style={styles.numInput}
                 placeholder="최대"
               />
+              <span style={{ marginLeft: 6, fontSize: 12, color: '#6B7280' }}>단위</span>
+              <input
+                type="number"
+                value={data.tempRange.step ?? ''}
+                onChange={(e) => updateRange('tempRange', 'step', e.target.value)}
+                style={styles.numInput}
+                placeholder="자동"
+                min={1}
+              />
             </div>
           )}
         </div>
@@ -158,6 +168,15 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
                 onChange={(e) => updateRange('precipRange', 'max', e.target.value)}
                 style={styles.numInput}
                 placeholder="최대"
+              />
+              <span style={{ marginLeft: 6, fontSize: 12, color: '#6B7280' }}>단위</span>
+              <input
+                type="number"
+                value={data.precipRange.step ?? ''}
+                onChange={(e) => updateRange('precipRange', 'step', e.target.value)}
+                style={styles.numInput}
+                placeholder="자동"
+                min={1}
               />
             </div>
           )}

@@ -6,6 +6,7 @@ export type GraphType =
   | 'pyramid'
   | 'ternary'
   | 'stacked'
+  | 'absbar'
   | 'scatter'
   | 'hythergraph'
   | 'cube'
@@ -16,7 +17,8 @@ export const GRAPH_LABELS: Record<GraphType, string> = {
   climate: '기후 그래프',
   pyramid: '인구 피라미드',
   ternary: '삼각 그래프',
-  stacked: '누적 막대/원 그래프',
+  stacked: '100% 막대/원 그래프',
+  absbar: '절댓값 막대 그래프',
   scatter: '산점도/버블 차트',
   hythergraph: '하이서그래프',
   cube: '정육면체 그래프',
@@ -36,8 +38,8 @@ export interface ClimateGraphData {
   monthInterval: MonthInterval;
   tempLabel: string;
   precipLabel: string;
-  tempRange: { min: number; max: number; auto: boolean };
-  precipRange: { min: number; max: number; auto: boolean };
+  tempRange: { min: number; max: number; auto: boolean; step?: number };
+  precipRange: { min: number; max: number; auto: boolean; step?: number };
 }
 
 // 편차 그래프 모드
@@ -120,6 +122,9 @@ export interface StackedGraphData {
   categories: StackedCategory[];
   seriesLabels: string[];
   unit: string;
+  pieRotation?: number;  // 0~360도
+  pieScale?: number;     // 퍼센트 (기본 100)
+  axisStep?: number;     // 축 눈금 간격 (기본 20)
 }
 
 // 채움 색상/패턴은 canvas/patterns.ts 의 getStackedFill() 사용
@@ -355,6 +360,39 @@ export function createDefaultRadarData(): RadarGraphData {
     autoMax: true,
     gridSteps: 5,
     showFill: false,
+  };
+}
+
+// 절댓값 막대 그래프 데이터
+export type AbsBarDirection = 'vertical' | 'horizontal';
+
+export interface AbsBarCategory {
+  label: string;
+  values: number[];
+}
+
+export interface AbsBarGraphData {
+  barDirection: AbsBarDirection;
+  stacked: boolean;
+  categories: AbsBarCategory[];
+  seriesLabels: string[];
+  unit: string;
+  yRange: { min: number; max: number; auto: boolean; step?: number };
+  fitMax?: boolean; // 최댓값에 맞추기
+}
+
+export function createDefaultAbsBarData(): AbsBarGraphData {
+  return {
+    barDirection: 'vertical',
+    stacked: false,
+    categories: [
+      { label: '(가)', values: [30, 50] },
+      { label: '(나)', values: [45, 35] },
+      { label: '(다)', values: [60, 20] },
+    ],
+    seriesLabels: ['항목1', '항목2'],
+    unit: '',
+    yRange: { min: 0, max: 100, auto: true },
   };
 }
 

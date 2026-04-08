@@ -15,7 +15,7 @@ interface HeaderProps {
 
 const MENU_ITEMS: GraphType[] = [
   'guide',
-  'climate', 'pyramid', 'ternary', 'stacked',
+  'climate', 'pyramid', 'ternary', 'stacked', 'absbar',
   'scatter', 'hythergraph', 'cube', 'radar',
 ];
 

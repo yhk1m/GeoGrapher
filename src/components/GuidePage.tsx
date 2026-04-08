@@ -23,7 +23,7 @@ export default function GuidePage({ onNavigate }: Props) {
         </section>
 
         <section style={styles.section}>
-          <h2 style={styles.h2}>지원 그래프 유형 (8종)</h2>
+          <h2 style={styles.h2}>지원 그래프 유형 (9종)</h2>
 
           <div style={styles.card} onClick={() => onNavigate('climate')}>
             <h3 style={styles.cardTitle}>기후 그래프</h3>
@@ -51,10 +51,18 @@ export default function GuidePage({ onNavigate }: Props) {
           </div>
 
           <div style={styles.card} onClick={() => onNavigate('stacked')}>
-            <h3 style={styles.cardTitle}>누적 막대/원 그래프</h3>
+            <h3 style={styles.cardTitle}>100% 막대/원 그래프</h3>
             <p style={styles.cardDesc}>
-              누적 막대 그래프와 원 그래프를 토글로 전환합니다.
+              100% 막대 그래프와 원 그래프를 토글로 전환합니다.
               막대는 가로/세로 방향 선택 가능하며, 최대 11개 항목을 흑백 패턴(단색, 사선, 격자, 도트 등)으로 구분합니다.
+            </p>
+          </div>
+
+          <div style={styles.card} onClick={() => onNavigate('absbar')}>
+            <h3 style={styles.cardTitle}>절댓값 막대 그래프</h3>
+            <p style={styles.cardDesc}>
+              절댓값(실수치)을 막대로 표시합니다. 단일 항목 또는 누적 모드를 지원하며,
+              세로/가로 방향을 선택할 수 있습니다. 축 범위와 단위를 자유롭게 설정 가능합니다.
             </p>
           </div>
 

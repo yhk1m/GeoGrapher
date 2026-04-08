@@ -10,6 +10,7 @@ import {
   type PyramidGraphData,
   type TernaryGraphData,
   type StackedGraphData,
+  type AbsBarGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -23,6 +24,7 @@ import { renderDeviationBGraph } from '../graphs/DeviationBGraph';
 import { renderPyramidGraph } from '../graphs/PopulationPyramid';
 import { renderTernaryGraph } from '../graphs/TernaryDiagram';
 import { renderStackedGraph } from '../graphs/StackedBarPie';
+import { renderAbsBarGraph } from '../graphs/AbsBarGraph';
 import { renderScatterGraph } from '../graphs/ScatterBubble';
 import { renderHythergraph } from '../graphs/Hythergraph';
 import { renderCubeGraph } from '../graphs/CubeGraph';
@@ -39,6 +41,7 @@ interface ExportModalProps {
   pyramidData: PyramidGraphData;
   ternaryData: TernaryGraphData;
   stackedData: StackedGraphData;
+  absBarData: AbsBarGraphData;
   scatterData: ScatterGraphData;
   hythergraphData: HythergraphData;
   cubeData: CubeGraphData;
@@ -58,6 +61,7 @@ export default function ExportModal({
   pyramidData,
   ternaryData,
   stackedData,
+  absBarData,
   scatterData,
   hythergraphData,
   cubeData,
@@ -79,6 +83,8 @@ export default function ExportModal({
         renderTernaryGraph(ctx, w, h, ternaryData, options);
       } else if (graphType === 'stacked') {
         renderStackedGraph(ctx, w, h, stackedData, options);
+      } else if (graphType === 'absbar') {
+        renderAbsBarGraph(ctx, w, h, absBarData, options);
       } else if (graphType === 'scatter') {
         renderScatterGraph(ctx, w, h, scatterData, options);
       } else if (graphType === 'hythergraph') {
@@ -89,7 +95,7 @@ export default function ExportModal({
         renderRadarChart(ctx, w, h, radarData, options);
       }
     };
-  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, scatterData, hythergraphData, cubeData, radarData, options]);
+  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, scatterData, hythergraphData, cubeData, radarData, options]);
 
   const exportW = settings.mode === 'exam' ? 800 : settings.width;
   const exportH = settings.mode === 'exam' ? 600 : settings.height;

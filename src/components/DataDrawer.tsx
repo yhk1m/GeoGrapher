@@ -8,6 +8,7 @@ import {
   type PyramidGraphData,
   type TernaryGraphData,
   type StackedGraphData,
+  type AbsBarGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -22,6 +23,7 @@ import DeviationBInput from './DeviationBInput';
 import PyramidInput from './PyramidInput';
 import TernaryInput from './TernaryInput';
 import StackedInput from './StackedInput';
+import AbsBarInput from './AbsBarInput';
 import ScatterInput from './ScatterInput';
 import HythergraphInput from './HythergraphInput';
 import CubeInput from './CubeInput';
@@ -44,6 +46,8 @@ interface DataDrawerProps {
   onTernaryDataChange: (data: TernaryGraphData) => void;
   stackedData: StackedGraphData;
   onStackedDataChange: (data: StackedGraphData) => void;
+  absBarData: AbsBarGraphData;
+  onAbsBarDataChange: (data: AbsBarGraphData) => void;
   scatterData: ScatterGraphData;
   onScatterDataChange: (data: ScatterGraphData) => void;
   hythergraphData: HythergraphData;
@@ -79,6 +83,8 @@ export default function DataDrawer({
   onTernaryDataChange,
   stackedData,
   onStackedDataChange,
+  absBarData,
+  onAbsBarDataChange,
   scatterData,
   onScatterDataChange,
   hythergraphData,
@@ -290,6 +296,9 @@ export default function DataDrawer({
       {graphType === 'stacked' && (
         <StackedInput data={stackedData} onChange={onStackedDataChange} />
       )}
+      {graphType === 'absbar' && (
+        <AbsBarInput data={absBarData} onChange={onAbsBarDataChange} />
+      )}
       {graphType === 'scatter' && (
         <ScatterInput data={scatterData} onChange={onScatterDataChange} />
       )}
@@ -302,7 +311,7 @@ export default function DataDrawer({
       {graphType === 'radar' && (
         <RadarInput data={radarData} onChange={onRadarDataChange} />
       )}
-      {graphType !== 'climate' && graphType !== 'pyramid' && graphType !== 'ternary' && graphType !== 'stacked' && graphType !== 'scatter' && graphType !== 'hythergraph' && graphType !== 'cube' && graphType !== 'radar' && (
+      {graphType !== 'climate' && graphType !== 'pyramid' && graphType !== 'ternary' && graphType !== 'stacked' && graphType !== 'absbar' && graphType !== 'scatter' && graphType !== 'hythergraph' && graphType !== 'cube' && graphType !== 'radar' && (
         <div style={styles.placeholder}>
           이 그래프 유형은 아직 준비 중입니다.
         </div>
