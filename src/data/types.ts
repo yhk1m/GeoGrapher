@@ -10,7 +10,11 @@ export type GraphType =
   | 'scatter'
   | 'hythergraph'
   | 'cube'
-  | 'radar';
+  | 'radar'
+  | 'choropleth'
+  | 'symbolmap'
+  | 'isoline'
+  | 'flowmap';
 
 export const GRAPH_LABELS: Record<GraphType, string> = {
   guide: '사용법 보기',
@@ -23,7 +27,16 @@ export const GRAPH_LABELS: Record<GraphType, string> = {
   hythergraph: '하이서그래프',
   cube: '정육면체 그래프',
   radar: '방사형 그래프',
+  choropleth: '단계구분도',
+  symbolmap: '도형표현도',
+  isoline: '등치선도',
+  flowmap: '유선도',
 };
+
+export const MAP_GRAPH_TYPES: ReadonlyArray<GraphType> = ['choropleth', 'symbolmap', 'isoline', 'flowmap'];
+export function isMapGraphType(t: GraphType): boolean {
+  return (MAP_GRAPH_TYPES as ReadonlyArray<GraphType>).includes(t);
+}
 
 // 기후 그래프 데이터
 export interface ClimateMonthData {

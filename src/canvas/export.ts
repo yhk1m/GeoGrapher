@@ -12,6 +12,10 @@ const TYPE_NAMES: Record<GraphType, string> = {
   hythergraph: 'hythergraph',
   cube: 'cube',
   radar: 'radar',
+  choropleth: 'choropleth',
+  symbolmap: 'symbolmap',
+  isoline: 'isoline',
+  flowmap: 'flowmap',
 };
 
 export function exportCanvasToPNG(

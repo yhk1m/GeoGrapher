@@ -5,6 +5,11 @@ import GuidePage from './components/GuidePage';
 import GraphCanvas from './components/GraphCanvas';
 import DataDrawer from './components/DataDrawer';
 import ExportModal from './components/ExportModal';
+import MapEditor from './components/maps/MapEditor';
+import SymbolMapEditor from './components/maps/SymbolMapEditor';
+import IsolineEditor from './components/maps/IsolineEditor';
+import FlowMapEditor from './components/maps/FlowMapEditor';
+import { isMapGraphType } from './data/types';
 import {
   type GraphType,
   type ClimateMode,
@@ -69,9 +74,23 @@ export default function App() {
         onToggleDrawer={() => setDrawerOpen((v) => !v)}
         drawerOpen={drawerOpen}
       />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div
+        style={{
+          display: 'flex',
+          flex: 1,
+          overflow: isMapGraphType(graphType) ? 'auto' : 'hidden',
+        }}
+      >
         {graphType === 'guide' ? (
           <GuidePage onNavigate={setGraphType} />
+        ) : graphType === 'choropleth' ? (
+          <MapEditor />
+        ) : graphType === 'symbolmap' ? (
+          <SymbolMapEditor />
+        ) : graphType === 'isoline' ? (
+          <IsolineEditor />
+        ) : graphType === 'flowmap' ? (
+          <FlowMapEditor />
         ) : (
           <>
             <GraphCanvas

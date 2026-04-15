@@ -17,7 +17,10 @@ const MENU_ITEMS: GraphType[] = [
   'guide',
   'climate', 'pyramid', 'ternary', 'stacked', 'absbar',
   'scatter', 'hythergraph', 'cube', 'radar',
+  'choropleth', 'symbolmap', 'isoline', 'flowmap',
 ];
+
+const MAP_SECTION_START: GraphType = 'choropleth';
 
 export default function Header({
   graphType,
@@ -80,6 +83,7 @@ export default function Header({
               {MENU_ITEMS.map((type, idx) => (
                 <div key={type}>
                   {idx === 1 && <div style={styles.separator} />}
+                  {type === MAP_SECTION_START && <div style={styles.separator} />}
                   <button
                     onClick={() => { onGraphTypeChange(type); setOpen(false); }}
                     style={{

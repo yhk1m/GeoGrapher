@@ -97,6 +97,17 @@ export default function ExportModal({
     };
   }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, scatterData, hythergraphData, cubeData, radarData, options]);
 
+  const isMapExport = graphType === 'choropleth' || graphType === 'symbolmap' || graphType === 'isoline' || graphType === 'flowmap';
+  const mapSvgId =
+    graphType === 'symbolmap' ? 'symbolmap-svg' :
+    graphType === 'isoline' ? 'isoline-svg' :
+    graphType === 'flowmap' ? 'flowmap-svg' :
+    'choropleth-svg';
+  const mapTypeName =
+    graphType === 'symbolmap' ? '도형표현도' :
+    graphType === 'isoline' ? '등치선도' :
+    graphType === 'flowmap' ? '유선도' :
+    '단계구분도';
   const exportW = settings.mode === 'exam' ? 800 : settings.width;
   const exportH = settings.mode === 'exam' ? 600 : settings.height;
 
@@ -117,15 +128,26 @@ export default function ExportModal({
     canvas.style.height = `${ph}px`;
 
     const ctx = canvas.getContext('2d')!;
-    ctx.scale(dpr * scale, dpr * scale);
 
-    const renderFn = getRenderFn();
-    renderFn(ctx, exportW, exportH);
-  }, [exportW, exportH, getRenderFn]);
+    if (isMapExport) {
+      // SVG → Canvas
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawMapSvgToCanvas(mapSvgId, canvas, pw * dpr, ph * dpr).catch(() => {});
+    } else {
+      ctx.scale(dpr * scale, dpr * scale);
+      const renderFn = getRenderFn();
+      renderFn(ctx, exportW, exportH);
+    }
+  }, [exportW, exportH, getRenderFn, isMapExport]);
 
   const handleExport = () => {
-    exportCanvasToPNG(getRenderFn(), settings, graphType);
-    onClose();
+    if (isMapExport) {
+      exportMapPng(mapSvgId, mapTypeName, exportW, exportH, settings.scale).then(onClose);
+    } else {
+      exportCanvasToPNG(getRenderFn(), settings, graphType);
+      onClose();
+    }
   };
 
   return (
@@ -320,3 +342,84 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#1B2A4A',
   },
 };
+
+// ─────────────────────────────────────────────────────────
+// 지도 (SVG) → PNG 헬퍼 (choropleth / symbolmap 공용)
+
+async function loadMapSvgImage(svgId: string): Promise<{ img: HTMLImageElement; w: number; h: number } | null> {
+  const svg = document.getElementById(svgId) as SVGSVGElement | null;
+  if (!svg) return null;
+  const w = Number(svg.getAttribute('width')) || svg.clientWidth || 900;
+  const h = Number(svg.getAttribute('height')) || svg.clientHeight || 1100;
+
+  const clone = svg.cloneNode(true) as SVGSVGElement;
+  if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('width', String(w));
+  clone.setAttribute('height', String(h));
+
+  const svgStr = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const img = new Image();
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+  URL.revokeObjectURL(url);
+  return { img, w, h };
+}
+
+async function drawMapSvgToCanvas(svgId: string, canvas: HTMLCanvasElement, targetW: number, targetH: number) {
+  const loaded = await loadMapSvgImage(svgId);
+  if (!loaded) return;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, targetW, targetH);
+
+  const { img, w, h } = loaded;
+  const scale = Math.min(targetW / w, targetH / h);
+  const dw = w * scale;
+  const dh = h * scale;
+  const dx = (targetW - dw) / 2;
+  const dy = (targetH - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+async function exportMapPng(svgId: string, typeName: string, exportW: number, exportH: number, scale: 1 | 2 | 3) {
+  const loaded = await loadMapSvgImage(svgId);
+  if (!loaded) {
+    alert('지도 SVG를 찾을 수 없습니다.');
+    return;
+  }
+  const { img, w, h } = loaded;
+
+  const outW = exportW * scale;
+  const outH = exportH * scale;
+  const canvas = document.createElement('canvas');
+  canvas.width = outW;
+  canvas.height = outH;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, outW, outH);
+
+  const fit = Math.min(outW / w, outH / h);
+  const dw = w * fit;
+  const dh = h * fit;
+  ctx.drawImage(img, (outW - dw) / 2, (outH - dh) / 2, dw, dh);
+
+  const ts = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fname = `GeoGrapher_${typeName}_${ts.getFullYear()}${pad(ts.getMonth() + 1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}.png`;
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}

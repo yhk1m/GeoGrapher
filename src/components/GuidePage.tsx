@@ -23,7 +23,7 @@ export default function GuidePage({ onNavigate }: Props) {
         </section>
 
         <section style={styles.section}>
-          <h2 style={styles.h2}>지원 그래프 유형 (9종)</h2>
+          <h2 style={styles.h2}>지원 그래프 유형 (13종)</h2>
 
           <div style={styles.card} onClick={() => onNavigate('climate')}>
             <h3 style={styles.cardTitle}>기후 그래프</h3>
@@ -100,6 +100,44 @@ export default function GuidePage({ onNavigate }: Props) {
             <p style={styles.cardDesc}>
               중심에서 방사형으로 뻗는 3~12개 축에 값을 찍어 다각형으로 연결합니다.
               최대 5개 계열을 선 스타일로 구분하며, 다각형 내부 채움을 on/off 할 수 있습니다.
+            </p>
+          </div>
+
+          <h3 style={styles.mapGroupTitle}>지도 시각화</h3>
+
+          <div style={styles.card} onClick={() => onNavigate('choropleth')}>
+            <h3 style={styles.cardTitle}>단계구분도</h3>
+            <p style={styles.cardDesc}>
+              행정구역(시·도 / 시·군·구 / 시·군·구 광역 통합)을 등급별 색상으로 채워 분포를 표현합니다.
+              등급 수(3~7단계)와 <strong>채우기 모드</strong>(컬러/패턴/컬러+패턴/그레이+패턴)를 선택할 수 있으며,
+              지도를 클릭해 등급을 칠하고 우클릭으로 스포이드 선택이 가능합니다. 범례는 드래그로 배치합니다.
+            </p>
+          </div>
+
+          <div style={styles.card} onClick={() => onNavigate('symbolmap')}>
+            <h3 style={styles.cardTitle}>도형표현도</h3>
+            <p style={styles.cardDesc}>
+              각 지역의 중심점에 <strong>파이/막대 차트</strong>를 배치하여 복수 항목의 값을 동시에 표현합니다.
+              심볼 크기(값 비례/고정), 항목별 색상과 패턴을 설정할 수 있으며,
+              심볼 위치는 드래그로 조정해 겹침을 해결합니다.
+            </p>
+          </div>
+
+          <div style={styles.card} onClick={() => onNavigate('isoline')}>
+            <h3 style={styles.cardTitle}>등치선도</h3>
+            <p style={styles.cardDesc}>
+              지점별 관측값에서 <strong>IDW 보간</strong>으로 등치선을 생성합니다.
+              등치선 간격·주곡선/간곡선, 색상 채우기(그라데이션) on/off를 설정할 수 있으며,
+              행정구역 경계로 clip 처리되어 깔끔하게 출력됩니다.
+            </p>
+          </div>
+
+          <div style={styles.card} onClick={() => onNavigate('flowmap')}>
+            <h3 style={styles.cardTitle}>유선도</h3>
+            <p style={styles.cardDesc}>
+              지역 간 <strong>이동·물류</strong>를 출발→도착 화살표로 표현합니다.
+              선 종류(직선/베지어 곡선)와 곡률, 화살표 스타일, 값에 비례한 선 굵기(최소/최대)를 설정합니다.
+              지도를 클릭해 출발·도착을 지정하거나 CSV로 일괄 입력할 수 있습니다.
             </p>
           </div>
         </section>
@@ -264,6 +302,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#1B2A4A',
     marginBottom: 4,
+  },
+  mapGroupTitle: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: '#1B2A4A',
+    marginTop: 20,
+    marginBottom: 8,
+    paddingLeft: 4,
+    borderLeft: '3px solid #1B2A4A',
   },
   cardDesc: {
     fontSize: 13,
