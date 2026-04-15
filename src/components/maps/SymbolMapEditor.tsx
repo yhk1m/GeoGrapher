@@ -1,6 +1,6 @@
 // © 2026 김용현
 // 도형표현도 에디터
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import SymbolMapCanvas from './SymbolMapCanvas';
 import {
   type SymbolMapState,
@@ -30,6 +30,17 @@ export default function SymbolMapEditor() {
   const [legendScale, setLegendScale] = useState(1);
   const [legendWidthOverride, setLegendWidthOverride] = useState<number | null>(null);
   const [regions, setRegions] = useState<{ code: string; name: string }[]>([]);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const sortedRegions = useMemo(() => {
+    const arr = [...regions];
+    arr.sort((a, b) =>
+      sortOrder === 'asc'
+        ? a.name.localeCompare(b.name, 'ko')
+        : b.name.localeCompare(a.name, 'ko'),
+    );
+    return arr;
+  }, [regions, sortOrder]);
 
   // 현재 unit의 지역 목록 로드 (데이터 테이블 행용)
   useEffect(() => {
@@ -333,10 +344,12 @@ export default function SymbolMapEditor() {
             </label>
           </div>
           <DataTable
-            regions={regions}
+            regions={sortedRegions}
             items={state.items}
             data={state.data}
             onCellChange={handleCellChange}
+            sortOrder={sortOrder}
+            onToggleSort={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
           />
           <button onClick={handleClearData} style={{ ...styles.resetBtn, marginTop: 8 }}>
             데이터 삭제
@@ -414,18 +427,31 @@ function DataTable({
   items,
   data,
   onCellChange,
+  sortOrder,
+  onToggleSort,
 }: {
   regions: { code: string; name: string }[];
   items: ItemDef[];
   data: Record<string, number[]>;
   onCellChange: (code: string, itemIdx: number, value: string) => void;
+  sortOrder: 'asc' | 'desc';
+  onToggleSort: () => void;
 }) {
   return (
     <div style={styles.tableWrap}>
       <table style={styles.table}>
         <thead>
           <tr>
-            <th style={styles.thRegion}>지역</th>
+            <th style={styles.thRegion}>
+              <button
+                type="button"
+                onClick={onToggleSort}
+                style={styles.sortBtn}
+                title={sortOrder === 'asc' ? '오름차순 (가나다) — 클릭 시 내림차순' : '내림차순 — 클릭 시 오름차순'}
+              >
+                지역 {sortOrder === 'asc' ? '▲' : '▼'}
+              </button>
+            </th>
             {items.map((it, i) => (
               <th key={i} style={styles.th} title={it.name}>
                 {it.name.length > 6 ? it.name.slice(0, 6) + '…' : it.name}
@@ -556,6 +582,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb',
     fontSize: 11, fontWeight: 600, position: 'sticky' as const, top: 0, left: 0,
     minWidth: 70,
+  },
+  sortBtn: {
+    background: 'transparent', border: 'none', padding: 0, margin: 0,
+    fontSize: 11, fontWeight: 600, color: '#111', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 4,
   },
   tdRegion: {
     padding: '2px 6px', fontSize: 11, borderRight: '1px solid #f3f4f6',

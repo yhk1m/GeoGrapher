@@ -1,6 +1,6 @@
 // © 2026 김용현
 // 등치선도 에디터
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import IsolineCanvas from './IsolineCanvas';
 import {
   type IsolineState,
@@ -22,6 +22,17 @@ export default function IsolineEditor() {
   const [legendScale, setLegendScale] = useState(1);
   const [legendWidthOverride, setLegendWidthOverride] = useState<number | null>(null);
   const [regions, setRegions] = useState<{ code: string; name: string }[]>([]);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const sortedRegions = useMemo(() => {
+    const arr = [...regions];
+    arr.sort((a, b) =>
+      sortOrder === 'asc'
+        ? a.name.localeCompare(b.name, 'ko')
+        : b.name.localeCompare(a.name, 'ko'),
+    );
+    return arr;
+  }, [regions, sortOrder]);
 
   useEffect(() => {
     const load = async () => {
@@ -278,12 +289,21 @@ export default function IsolineEditor() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.thRegion}>지역</th>
+                  <th style={styles.thRegion}>
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
+                      style={styles.sortBtn}
+                      title={sortOrder === 'asc' ? '오름차순 (가나다) — 클릭 시 내림차순' : '내림차순 — 클릭 시 오름차순'}
+                    >
+                      지역 {sortOrder === 'asc' ? '▲' : '▼'}
+                    </button>
+                  </th>
                   <th style={styles.th}>값</th>
                 </tr>
               </thead>
               <tbody>
-                {regions.map((r) => (
+                {sortedRegions.map((r) => (
                   <tr key={r.code}>
                     <td style={styles.tdRegion} title={r.name}>
                       {r.name.length > 8 ? r.name.slice(0, 8) + '…' : r.name}
@@ -414,6 +434,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '4px 6px', textAlign: 'left' as const, background: '#f3f4f6',
     borderBottom: '1px solid #e5e7eb', borderRight: '1px solid #e5e7eb',
     fontSize: 11, fontWeight: 600, position: 'sticky' as const, top: 0, left: 0,
+  },
+  sortBtn: {
+    background: 'transparent', border: 'none', padding: 0, margin: 0,
+    fontSize: 11, fontWeight: 600, color: '#111', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 4,
   },
   tdRegion: {
     padding: '2px 6px', fontSize: 11, borderRight: '1px solid #f3f4f6',
