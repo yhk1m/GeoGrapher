@@ -10,7 +10,7 @@ export default function GuidePage({ onNavigate }: Props) {
     <div style={styles.container}>
       <div style={styles.content}>
         <h1 style={styles.title}>GeoGrapher</h1>
-        <p style={styles.subtitle}>수능/모의고사 지리 과목 출제용 그래프 제작 도구</p>
+        <p style={styles.subtitle}>지리 과목 수업자료 제작 및 문항 출제용 그래프 제작 도구</p>
 
         <section style={styles.section}>
           <h2 style={styles.h2}>시작하기</h2>
