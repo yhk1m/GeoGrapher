@@ -193,7 +193,7 @@ export default function FlowMapCanvas({
             if (!fromPt || !toPt) return null;
             const color = flow.color ?? state.defaultColor;
             const width = flowWidth(flow.value, maxValue, state.minWidth, state.maxWidth);
-            const d = buildFlowPath(fromPt, toPt, state.curveType, state.bezierCurvature, width);
+            const d = buildFlowPath(fromPt, toPt, state.curveType, state.bezierCurvature, state.arrowStyle, width);
             const markerId = state.arrowStyle === 'none' ? undefined : `arrow-${state.arrowStyle}`;
             return (
               <g key={flow.id} opacity={state.opacity}>
@@ -228,8 +228,9 @@ export default function FlowMapCanvas({
 
 function ArrowMarker({ id, color, style }: { id: string; color: string; style: 'triangle' | 'open' }) {
   if (style === 'triangle') {
+    // refX=0: 삼각형 base가 path 끝에 위치, 촉은 앞쪽으로 markerWidth×strokeWidth만큼 돌출
     return (
-      <marker id={id} viewBox="0 0 10 10" refX={1} refY={5} markerWidth={3} markerHeight={3} orient="auto-start-reverse" markerUnits="strokeWidth">
+      <marker id={id} viewBox="0 0 10 10" refX={0} refY={5} markerWidth={3} markerHeight={3} orient="auto-start-reverse" markerUnits="strokeWidth">
         <path d="M0,0 L10,5 L0,10 Z" fill={color} />
       </marker>
     );
@@ -248,31 +249,60 @@ function flowWidth(value: number, maxValue: number, minW: number, maxW: number):
   return minW + (maxW - minW) * t;
 }
 
+// 화살표 스타일별 path 끝단을 줄이는 거리 (user 좌표계)
+// triangle: marker 전체 길이(= markerWidth × strokeWidth = 3 × strokeWidth) 만큼 선을 앞당김
+// → 선은 삼각형 base에서 끝나고 촉은 원래 도착점까지 뾰족하게 도달
+function arrowShortening(style: 'triangle' | 'open' | 'none', strokeWidth: number): number {
+  if (style === 'triangle') return strokeWidth * 3;
+  return 0;
+}
+
 function buildFlowPath(
   from: [number, number],
   to: [number, number],
   curve: 'straight' | 'bezier',
   curvature: number,
-  _width: number,
+  arrowStyle: 'triangle' | 'open' | 'none',
+  width: number,
 ): string {
   const [x1, y1] = from;
   const [x2, y2] = to;
-  if (curve === 'straight') {
-    return `M${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)}`;
-  }
-  // 베지어: 중점에서 법선 방향으로 offset
-  const mx = (x1 + x2) / 2;
-  const my = (y1 + y2) / 2;
   const dx = x2 - x1;
   const dy = y2 - y1;
   const dist = Math.hypot(dx, dy);
   if (dist < 1) return `M${x1},${y1}L${x2},${y2}`;
+
+  const shorten = arrowShortening(arrowStyle, width);
+
+  if (curve === 'straight') {
+    const ratio = shorten > 0 && dist > shorten ? (dist - shorten) / dist : 1;
+    const ex = x1 + dx * ratio;
+    const ey = y1 + dy * ratio;
+    return `M${x1.toFixed(1)},${y1.toFixed(1)} L${ex.toFixed(1)},${ey.toFixed(1)}`;
+  }
+
+  // 베지어: 중점에서 법선 방향으로 offset
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
   const nx = -dy / dist;
   const ny = dx / dist;
   const off = dist * curvature * 0.5;
   const cx = mx + nx * off;
   const cy = my + ny * off;
-  return `M${x1.toFixed(1)},${y1.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+
+  // 종단 접선 방향(제어점→끝)으로 shorten 만큼 당겨서 end 좌표 계산
+  let ex = x2;
+  let ey = y2;
+  if (shorten > 0) {
+    const tdx = x2 - cx;
+    const tdy = y2 - cy;
+    const tdist = Math.hypot(tdx, tdy);
+    if (tdist > shorten) {
+      ex = x2 - (tdx / tdist) * shorten;
+      ey = y2 - (tdy / tdist) * shorten;
+    }
+  }
+  return `M${x1.toFixed(1)},${y1.toFixed(1)} Q${cx.toFixed(1)},${cy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
 }
 
 function FlowLabel({

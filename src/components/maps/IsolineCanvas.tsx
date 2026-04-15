@@ -167,12 +167,15 @@ export default function IsolineCanvas({
     const majors = new Set<number>();
     let thresholds: number[] = [];
 
+    const MAX_MAJORS = 100;
+    const MAX_MINORS = 500;
     if (state.intervalMode === 'auto') {
       const step = (max - min) / state.levelCount;
-      // "nice" step: 반올림
-      const rounded = niceStep(step);
+      let rounded = niceStep(step);
+      if (!isFinite(rounded) || rounded <= 0) rounded = (max - min) || 1;
       let first = Math.ceil(min / rounded) * rounded;
-      for (let v = first; v <= max; v += rounded) {
+      let count = 0;
+      for (let v = first; v <= max && count < MAX_MAJORS; v += rounded, count++) {
         thresholds.push(v);
         majors.add(v);
       }
@@ -182,14 +185,15 @@ export default function IsolineCanvas({
       if (major > 0) {
         const minor = state.minorSubdivisions > 0 ? major / state.minorSubdivisions : 0;
         let first = Math.ceil(min / major) * major;
-        for (let v = first; v <= max; v += major) {
+        let majorCount = 0;
+        for (let v = first; v <= max && majorCount < MAX_MAJORS; v += major, majorCount++) {
           thresholds.push(v);
           majors.add(v);
         }
         if (minor > 0) {
           let start = Math.ceil(min / minor) * minor;
-          for (let v = start; v <= max; v += minor) {
-            // 주곡선과 중복 방지
+          let minorCount = 0;
+          for (let v = start; v <= max && minorCount < MAX_MINORS; v += minor, minorCount++) {
             if (!majors.has(v)) thresholds.push(v);
           }
         }
@@ -201,21 +205,36 @@ export default function IsolineCanvas({
 
   // d3-contour 호출
   const contourShapes = useMemo(() => {
-    if (!gridData || levels.thresholds.length === 0) return [] as { value: number; d: string; isMajor: boolean }[];
-    const { grid, gw, gh, cellW, cellH } = gridData;
-    const gen = d3contours().size([gw, gh]).thresholds(levels.thresholds);
-    const list = gen(Array.from(grid));
-    return list.map((c) => {
-      // MultiPolygon: 셀 좌표계에서 화면 좌표계로 스케일
-      const scaled: GeoJSON.MultiPolygon = {
-        type: 'MultiPolygon',
-        coordinates: c.coordinates.map((polygon) =>
-          polygon.map((ring) => ring.map(([x, y]) => [x * cellW, y * cellH] as [number, number])),
-        ),
-      };
-      const d = multiPolygonToPath(scaled);
-      return { value: c.value, d, isMajor: levels.majors.has(c.value) };
-    });
+    if (!gridData || levels.thresholds.length === 0) {
+      return [] as { value: number; d: string; longestRing: [number, number][] | null; isMajor: boolean }[];
+    }
+    try {
+      const { grid, gw, gh, cellW, cellH } = gridData;
+      const gen = d3contours().size([gw, gh]).thresholds(levels.thresholds);
+      const list = gen(Array.from(grid));
+      return list.map((c) => {
+        const scaledRings: [number, number][][] = [];
+        for (const polygon of c.coordinates) {
+          for (const ring of polygon) {
+            scaledRings.push(ring.map(([x, y]) => [x * cellW, y * cellH] as [number, number]));
+          }
+        }
+        const d = ringsToPath(scaledRings);
+        let longestRing: [number, number][] | null = null;
+        let longestLen = 0;
+        for (const ring of scaledRings) {
+          const len = ringLength(ring);
+          if (len > longestLen) {
+            longestLen = len;
+            longestRing = ring;
+          }
+        }
+        return { value: c.value, d, longestRing, isMajor: levels.majors.has(c.value) };
+      });
+    } catch (err) {
+      console.error('[등치선도] 컨투어 계산 오류:', err);
+      return [];
+    }
   }, [gridData, levels]);
 
   // 채우기 색상 (선택적)
@@ -301,35 +320,30 @@ export default function IsolineCanvas({
             ))}
           </g>
 
-          {/* 주곡선 값 라벨 (옵션) */}
+          {/* 주곡선 값 라벨 (등치선 위에 직접 배치) */}
           {state.showLabels && (
             <g clipPath={state.clipToBoundary ? `url(#${clipId})` : undefined}>
               {contourShapes.filter((c) => c.isMajor).map((c, i) => {
+                if (!c.longestRing) return null;
+                const pos = midpointOfRing(c.longestRing);
+                if (!pos) return null;
                 const label = formatNumber(c.value);
-                const [lx, ly] = approxContourLabelPos(c.d);
-                if (!isFinite(lx) || !isFinite(ly)) return null;
                 return (
-                  <g key={`lbl-${i}`} transform={`translate(${lx}, ${ly})`}>
-                    <rect
-                      x={-label.length * 3.5}
-                      y={-7}
-                      width={label.length * 7}
-                      height={14}
-                      fill="#ffffff"
-                      stroke="none"
-                    />
-                    <text
-                      x={0}
-                      y={0}
-                      fontSize={11}
-                      fill={state.lineColor}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      style={{ pointerEvents: 'none' }}
-                    >
-                      {label}
-                    </text>
-                  </g>
+                  <text
+                    key={`lbl-${i}`}
+                    x={pos[0]}
+                    y={pos[1]}
+                    fontSize={11}
+                    fill={state.lineColor}
+                    stroke="#ffffff"
+                    strokeWidth={3}
+                    paintOrder="stroke"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {label}
+                  </text>
                 );
               })}
             </g>
@@ -358,21 +372,48 @@ export default function IsolineCanvas({
   );
 }
 
-// MultiPolygon → SVG path 문자열
-function multiPolygonToPath(mp: GeoJSON.MultiPolygon): string {
+// 링 배열 → SVG path 문자열
+function ringsToPath(rings: [number, number][][]): string {
   const out: string[] = [];
-  for (const polygon of mp.coordinates) {
-    for (const ring of polygon) {
-      if (ring.length === 0) continue;
-      let d = `M${ring[0][0].toFixed(2)},${ring[0][1].toFixed(2)}`;
-      for (let i = 1; i < ring.length; i++) {
-        d += `L${ring[i][0].toFixed(2)},${ring[i][1].toFixed(2)}`;
-      }
-      d += 'Z';
-      out.push(d);
+  for (const ring of rings) {
+    if (ring.length === 0) continue;
+    let d = `M${ring[0][0].toFixed(2)},${ring[0][1].toFixed(2)}`;
+    for (let i = 1; i < ring.length; i++) {
+      d += `L${ring[i][0].toFixed(2)},${ring[i][1].toFixed(2)}`;
     }
+    d += 'Z';
+    out.push(d);
   }
   return out.join(' ');
+}
+
+function ringLength(ring: [number, number][]): number {
+  let total = 0;
+  for (let i = 1; i < ring.length; i++) {
+    total += Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]);
+  }
+  return total;
+}
+
+// 링 둘레의 중간 지점 좌표 (등치선 위)
+function midpointOfRing(ring: [number, number][]): [number, number] | null {
+  if (ring.length < 2) return null;
+  const totalLen = ringLength(ring);
+  if (totalLen <= 0) return null;
+  const target = totalLen / 2;
+  let acc = 0;
+  for (let i = 1; i < ring.length; i++) {
+    const segLen = Math.hypot(ring[i][0] - ring[i - 1][0], ring[i][1] - ring[i - 1][1]);
+    if (acc + segLen >= target) {
+      const t = segLen > 0 ? (target - acc) / segLen : 0;
+      return [
+        ring[i - 1][0] + (ring[i][0] - ring[i - 1][0]) * t,
+        ring[i - 1][1] + (ring[i][1] - ring[i - 1][1]) * t,
+      ];
+    }
+    acc += segLen;
+  }
+  return ring[Math.floor(ring.length / 2)];
 }
 
 // 간격 "nice" 반올림
@@ -393,13 +434,6 @@ function formatNumber(v: number): string {
   if (Math.abs(v) >= 1000) return v.toLocaleString('ko-KR', { maximumFractionDigits: 0 });
   if (Number.isInteger(v)) return String(v);
   return v.toFixed(1);
-}
-
-// path d에서 첫 좌표 근방을 라벨 위치로 사용 (단순)
-function approxContourLabelPos(d: string): [number, number] {
-  const m = /M([\d.\-]+),([\d.\-]+)/.exec(d);
-  if (!m) return [NaN, NaN];
-  return [parseFloat(m[1]), parseFloat(m[2])];
 }
 
 function SvgLegend({
