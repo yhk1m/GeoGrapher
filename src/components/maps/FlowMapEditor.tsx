@@ -73,12 +73,25 @@ export default function FlowMapEditor() {
         if (pendingFrom && code !== pendingFrom) {
           addFlow(pendingFrom, code);
         }
+        // 연속 입력: 유선 생성 후 다음 출발점 선택 단계로 복귀 (취소 버튼으로 종료)
         setPendingFrom(null);
-        setClickMode('idle');
+        setClickMode('pickFrom');
       }
     },
     [clickMode, pendingFrom],
   );
+
+  useEffect(() => {
+    if (clickMode === 'idle') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPendingFrom(null);
+        setClickMode('idle');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [clickMode]);
 
   const startAddByClick = () => {
     setPendingFrom(null);
@@ -189,8 +202,10 @@ export default function FlowMapEditor() {
         />
         {clickMode !== 'idle' && (
           <div style={styles.clickHint}>
-            {clickMode === 'pickFrom' ? '📍 지도에서 출발 지역을 클릭하세요' : '🎯 도착 지역을 클릭하세요'}
-            <button onClick={cancelClickMode} style={styles.cancelBtn}>취소</button>
+            {clickMode === 'pickFrom'
+              ? `📍 출발 지역 클릭 · 연속 입력 중 (${state.flows.length}개)`
+              : '🎯 도착 지역을 클릭하세요'}
+            <button onClick={cancelClickMode} style={styles.cancelBtn}>완료 (Esc)</button>
           </div>
         )}
       </main>
