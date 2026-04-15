@@ -5,6 +5,7 @@ import GuidePage from './components/GuidePage';
 import GraphCanvas from './components/GraphCanvas';
 import DataDrawer from './components/DataDrawer';
 import ExportModal from './components/ExportModal';
+import AnnouncementModal, { shouldShowAnnouncement } from './components/AnnouncementModal';
 import MapEditor from './components/maps/MapEditor';
 import SymbolMapEditor from './components/maps/SymbolMapEditor';
 import IsolineEditor from './components/maps/IsolineEditor';
@@ -46,6 +47,7 @@ export default function App() {
   const [climateMode, setClimateMode] = useState<ClimateMode>('normal');
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(false);
+  const [announcementOpen, setAnnouncementOpen] = useState(shouldShowAnnouncement);
 
   const [climateData, setClimateData] = useState<ClimateGraphData>(createDefaultClimateData);
   const [deviationAData, setDeviationAData] = useState<DeviationAData>(createDefaultDeviationAData);
@@ -161,6 +163,12 @@ export default function App() {
           radarData={radarData}
           options={options}
           onClose={() => setExportOpen(false)}
+        />
+      )}
+      {announcementOpen && (
+        <AnnouncementModal
+          onClose={() => setAnnouncementOpen(false)}
+          onNavigate={setGraphType}
         />
       )}
     </div>

@@ -103,7 +103,14 @@ export default function GuidePage({ onNavigate }: Props) {
             </p>
           </div>
 
-          <h3 style={styles.mapGroupTitle}>지도 시각화</h3>
+          <h3 style={styles.mapGroupTitle}>
+            통계지도 (NEW)
+            <span style={styles.newBadge}>4종 신규 추가</span>
+          </h3>
+          <p style={styles.mapGroupDesc}>
+            행정구역(시·도, 시·군·구, 시·군·구 광역 통합) 기반 SVG 지도 시각화입니다.
+            도형표현도·단계구분도·등치선도·유선도를 하나의 도구에서 제작하고 고해상도 PNG로 내보낼 수 있습니다.
+          </p>
 
           <div style={styles.card} onClick={() => onNavigate('choropleth')}>
             <h3 style={styles.cardTitle}>단계구분도</h3>
@@ -304,13 +311,33 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 4,
   },
   mapGroupTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 700,
     color: '#1B2A4A',
-    marginTop: 20,
-    marginBottom: 8,
-    paddingLeft: 4,
-    borderLeft: '3px solid #1B2A4A',
+    marginTop: 24,
+    marginBottom: 6,
+    paddingLeft: 8,
+    borderLeft: '4px solid #1B2A4A',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  },
+  mapGroupDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 1.6,
+    marginTop: 0,
+    marginBottom: 10,
+    paddingLeft: 12,
+  },
+  newBadge: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#fff',
+    background: '#DC2626',
+    padding: '2px 8px',
+    borderRadius: 10,
+    letterSpacing: 0.2,
   },
   cardDesc: {
     fontSize: 13,
