@@ -34,7 +34,7 @@ export function renderRadarChart(
   const legendPos = options.legendPosition;
   const legendLabels = data.series.map((s) => s.label);
   const legendW = (showLegend && legendPos === 'right')
-    ? measureLegendWidth(ctx, legendLabels, fs.dataLabel * 0.85 + 5)
+    ? measureLegendWidth(ctx, legendLabels, fs.dataLabel * 0.85 + 5, 'line')
     : 0;
 
   const topPad = options.title ? 60 : 10;
@@ -199,11 +199,16 @@ export function renderRadarChart(
     const plotW = availW;
     const plotH = availH;
 
-    const items = data.series.map((s, i) => ({
-      type: 'line' as const,
-      fillStyle: GRAY_SHADES[i % GRAY_SHADES.length],
-      label: s.label,
-    }));
+    const items = data.series.map((s, i) => {
+      const style = LINE_STYLES[i % LINE_STYLES.length];
+      return {
+        type: 'line' as const,
+        fillStyle: GRAY_SHADES[i % GRAY_SHADES.length],
+        label: s.label,
+        dash: style.dash,
+        lineWidth: style.width,
+      };
+    });
     drawLegend({
       ctx, items, position: legendPos,
       plotX, plotY, plotW, plotH,

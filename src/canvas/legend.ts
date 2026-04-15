@@ -9,7 +9,13 @@ export interface LegendItem {
   label: string;
   /** 밝은 채움일 때 아이콘에 검정 테두리 표시 */
   bordered?: boolean;
+  /** 선 아이콘(line)의 대시 패턴 — 미지정 시 실선 */
+  dash?: number[];
+  /** 선 아이콘(line)의 굵기 — 미지정 시 2.5 */
+  lineWidth?: number;
 }
+
+const LINE_ICON_SIZE = 36;
 
 interface LegendParams {
   ctx: CanvasRenderingContext2D;
@@ -32,11 +38,12 @@ const LEGEND_FONT = "'Noto Sans KR', sans-serif";
 export function measureLegendWidth(
   ctx: CanvasRenderingContext2D,
   labels: string[],
-  fontSize: number
+  fontSize: number,
+  iconType: 'rect' | 'circle' | 'line' = 'rect'
 ): number {
   ctx.save();
   ctx.font = `bold ${fontSize}px ${LEGEND_FONT}`;
-  const iconSize = 16;
+  const iconSize = iconType === 'line' ? LINE_ICON_SIZE : 16;
   const iconGap = 10;
   const padding = 12;
   const maxW = Math.max(...labels.map((l) => iconSize + iconGap + ctx.measureText(l).width));
@@ -56,13 +63,13 @@ export function drawLegend({
   ctx.save();
   ctx.font = `bold ${fontSize}px ${LEGEND_FONT}`;
 
-  const iconSize = 16;
   const iconGap = 10;
   const padding = 12;
   const lineHeight = fontSize + 8;
+  const iconWidthOf = (item: LegendItem) => (item.type === 'line' ? LINE_ICON_SIZE : 16);
 
   // 각 아이템 텍스트 너비 측정
-  const itemWidths = items.map((item) => iconSize + iconGap + ctx.measureText(item.label).width);
+  const itemWidths = items.map((item) => iconWidthOf(item) + iconGap + ctx.measureText(item.label).width);
 
   if (position === 'bottom') {
     // 하단: 그래프 너비 박스, 아이템 가운데 모아서 배치
@@ -88,12 +95,13 @@ export function drawLegend({
 
     for (let idx = 0; idx < items.length; idx++) {
       const item = items[idx];
-      drawIcon(ctx, item, cx, cy, iconSize);
+      const iSize = iconWidthOf(item);
+      drawIcon(ctx, item, cx, cy, iSize);
       ctx.font = `bold ${fontSize}px ${LEGEND_FONT}`;
       ctx.fillStyle = '#000';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(item.label, cx + iconSize + iconGap, cy);
+      ctx.fillText(item.label, cx + iSize + iconGap, cy);
       cx += itemWidths[idx] + itemSpacing;
     }
     ctx.restore();
@@ -120,12 +128,13 @@ export function drawLegend({
     let cy = boxY + padding + lineHeight / 2;
     for (const item of items) {
       const ix = boxX + padding;
-      drawIcon(ctx, item, ix, cy, iconSize);
+      const iSize = iconWidthOf(item);
+      drawIcon(ctx, item, ix, cy, iSize);
       ctx.font = `bold ${fontSize}px ${LEGEND_FONT}`;
       ctx.fillStyle = '#000';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(item.label, ix + iconSize + iconGap, cy);
+      ctx.fillText(item.label, ix + iSize + iconGap, cy);
       cy += lineHeight + itemGap;
     }
     ctx.restore();
@@ -158,12 +167,15 @@ function drawIcon(
     ctx.arc(x + size / 2, cy, size / 2.5, 0, Math.PI * 2);
     ctx.fill();
   } else if (item.type === 'line') {
+    ctx.save();
     ctx.strokeStyle = item.fillStyle;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = item.lineWidth ?? 2.5;
+    if (item.dash && item.dash.length > 0) ctx.setLineDash(item.dash);
     ctx.beginPath();
     ctx.moveTo(x, cy);
     ctx.lineTo(x + size, cy);
     ctx.stroke();
+    ctx.restore();
     ctx.fillStyle = item.fillStyle;
     ctx.beginPath();
     ctx.arc(x + size / 2, cy, 3.5, 0, Math.PI * 2);
