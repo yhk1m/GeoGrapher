@@ -1,9 +1,11 @@
 // © 2026 김용현
 // 유선도 SVG 렌더링 — centroid 간 화살표
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { geoMercator, geoPath } from 'd3-geo';
+import { geoPath } from 'd3-geo';
 import type { Feature } from 'geojson';
 import type { FlowMapState, RegionProps } from './types';
+import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE } from './types';
+import { createProjection } from './projection';
 import { useGeoData } from './useGeoData';
 
 interface Props {
@@ -16,9 +18,6 @@ interface Props {
   pendingFrom: string | null;
   onRegionClick: (code: string) => void;
 }
-
-const ASPECT_W = 9;
-const ASPECT_H = 11;
 
 export default function FlowMapCanvas({
   state,
@@ -51,17 +50,18 @@ export default function FlowMapCanvas({
 
   const { svgW, svgH } = useMemo(() => {
     if (box.w === 0 || box.h === 0) return { svgW: 0, svgH: 0 };
-    const byW = { w: box.w, h: (box.w * ASPECT_H) / ASPECT_W };
-    const byH = { w: (box.h * ASPECT_W) / ASPECT_H, h: box.h };
+    const { w: aw, h: ah } = MAP_UNIT_ASPECT[state.unit];
+    const byW = { w: box.w, h: (box.w * ah) / aw };
+    const byH = { w: (box.h * aw) / ah, h: box.h };
     const fit = byW.h <= box.h ? byW : byH;
     return { svgW: Math.floor(fit.w), svgH: Math.floor(fit.h) };
-  }, [box]);
+  }, [box, state.unit]);
 
   const { pathFn, features, centroids } = useMemo(() => {
     if (geo.status !== 'ready' || svgW === 0) {
       return { pathFn: null, features: [] as Feature<GeoJSON.Geometry, RegionProps>[], centroids: new Map<string, [number, number]>() };
     }
-    const projection = geoMercator().fitSize([svgW, svgH], geo.data);
+    const projection = createProjection(state.unit, svgW, svgH, geo.data);
     const path = geoPath(projection);
     const c = new Map<string, [number, number]>();
     for (const f of geo.data.features) {
@@ -71,7 +71,7 @@ export default function FlowMapCanvas({
       if (isFinite(cx) && isFinite(cy)) c.set(code, [cx, cy]);
     }
     return { pathFn: path, features: geo.data.features, centroids: c };
-  }, [geo, svgW, svgH]);
+  }, [geo, svgW, svgH, state.unit]);
 
   // 휠 줌
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function FlowMapCanvas({
   }
 
   const strokeColor = state.unit === 'sido' ? '#334155' : '#64748b';
-  const strokeWidth = state.unit === 'sido' ? 1.2 : 0.5;
+  const strokeWidth = state.unit === 'sido' ? 1.2 : MAP_UNIT_SCOPE[state.unit] === 'world' ? 0.4 : 0.5;
 
   return (
     <div ref={containerRef} style={styles.container}>

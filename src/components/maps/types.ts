@@ -1,18 +1,46 @@
 // © 2026 김용현
 // 지도 모듈 공통 타입
 
-export type MapUnit = 'sido' | 'sigungu' | 'sigungu_metro_merged';
+export type MapUnit =
+  | 'sido'
+  | 'sigungu'
+  | 'sigungu_metro_merged'
+  | 'world_atlantic'
+  | 'world_pacific';
 
 export const MAP_UNIT_LABELS: Record<MapUnit, string> = {
   sido: '시·도 (17)',
   sigungu: '시·군·구 (전체)',
   sigungu_metro_merged: '시·군·구 (광역 통합)',
+  world_atlantic: '세계 (대서양 중심)',
+  world_pacific: '세계 (태평양 중심)',
 };
 
 export const MAP_UNIT_FILES: Record<MapUnit, string> = {
   sido: '/geo/sido.geojson',
   sigungu: '/geo/sigungu.geojson',
   sigungu_metro_merged: '/geo/sigungu_metro_merged.geojson',
+  world_atlantic: '/geo/world_countries.geojson',
+  world_pacific: '/geo/world_countries.geojson',
+};
+
+// 지도 유형 분류: 한국 지역도 vs 세계지도
+export type MapScope = 'korea' | 'world';
+export const MAP_UNIT_SCOPE: Record<MapUnit, MapScope> = {
+  sido: 'korea',
+  sigungu: 'korea',
+  sigungu_metro_merged: 'korea',
+  world_atlantic: 'world',
+  world_pacific: 'world',
+};
+
+// 캔버스 종횡비 (가로:세로) — 한국 9:11(세로형), 세계 Miller는 약 1.37:1
+export const MAP_UNIT_ASPECT: Record<MapUnit, { w: number; h: number }> = {
+  sido: { w: 9, h: 11 },
+  sigungu: { w: 9, h: 11 },
+  sigungu_metro_merged: { w: 9, h: 11 },
+  world_atlantic: { w: 11, h: 8 },
+  world_pacific: { w: 11, h: 8 },
 };
 
 export interface RegionProps {
@@ -22,6 +50,9 @@ export interface RegionProps {
   parent_code?: string;
   parent_name?: string;
   region_type?: string;
+  // 세계지도 전용
+  name_en?: string;
+  continent?: string;
 }
 
 // 채우기 모드 4종

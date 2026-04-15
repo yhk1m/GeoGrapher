@@ -1,9 +1,11 @@
 // © 2026 김용현
 // 도형표현도 SVG 렌더링 — 지도 배경 + 중심점 위 파이/막대 심볼
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { geoMercator, geoPath } from 'd3-geo';
+import { geoPath } from 'd3-geo';
 import type { Feature } from 'geojson';
 import type { SymbolMapState, RegionProps, ItemDef } from './types';
+import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE } from './types';
+import { createProjection } from './projection';
 import { useGeoData } from './useGeoData';
 import PatternDefs from './PatternDefs';
 
@@ -16,8 +18,6 @@ interface Props {
   onSymbolDragEnd: (code: string, dx: number, dy: number) => void;
 }
 
-const ASPECT_W = 9;
-const ASPECT_H = 11;
 const PATTERN_ID_PREFIX = 'sym';
 
 export default function SymbolMapCanvas({
@@ -49,17 +49,18 @@ export default function SymbolMapCanvas({
 
   const { svgW, svgH } = useMemo(() => {
     if (box.w === 0 || box.h === 0) return { svgW: 0, svgH: 0 };
-    const byW = { w: box.w, h: (box.w * ASPECT_H) / ASPECT_W };
-    const byH = { w: (box.h * ASPECT_W) / ASPECT_H, h: box.h };
+    const { w: aw, h: ah } = MAP_UNIT_ASPECT[state.unit];
+    const byW = { w: box.w, h: (box.w * ah) / aw };
+    const byH = { w: (box.h * aw) / ah, h: box.h };
     const fit = byW.h <= box.h ? byW : byH;
     return { svgW: Math.floor(fit.w), svgH: Math.floor(fit.h) };
-  }, [box]);
+  }, [box, state.unit]);
 
   const { pathFn, features, centroids } = useMemo(() => {
     if (geo.status !== 'ready' || svgW === 0) {
       return { pathFn: null, features: [] as Feature<GeoJSON.Geometry, RegionProps>[], centroids: new Map<string, [number, number]>() };
     }
-    const projection = geoMercator().fitSize([svgW, svgH], geo.data);
+    const projection = createProjection(state.unit, svgW, svgH, geo.data);
     const path = geoPath(projection);
     const c = new Map<string, [number, number]>();
     for (const f of geo.data.features) {
@@ -69,10 +70,11 @@ export default function SymbolMapCanvas({
       if (isFinite(cx) && isFinite(cy)) c.set(code, [cx, cy]);
     }
     return { pathFn: path, features: geo.data.features, centroids: c };
-  }, [geo, svgW, svgH]);
+  }, [geo, svgW, svgH, state.unit]);
 
+  const isWorld = MAP_UNIT_SCOPE[state.unit] === 'world';
   const strokeColor = state.unit === 'sido' ? '#334155' : '#64748b';
-  const strokeWidth = state.unit === 'sido' ? 1.2 : 0.5;
+  const strokeWidth = state.unit === 'sido' ? 1.2 : isWorld ? 0.4 : 0.5;
 
   // 휠 줌 (choropleth와 동일)
   useEffect(() => {

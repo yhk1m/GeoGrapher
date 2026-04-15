@@ -1,9 +1,11 @@
 // © 2026 김용현
 // SVG 지도 렌더링 — 단계구분도 + 패턴 + SVG 내부 범례
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { geoMercator, geoPath } from 'd3-geo';
+import { geoPath } from 'd3-geo';
 import type { Feature } from 'geojson';
 import type { ChoroplethState, RegionProps, PatternKind } from './types';
+import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE } from './types';
+import { createProjection } from './projection';
 import { useGeoData } from './useGeoData';
 import PatternDefs from './PatternDefs';
 
@@ -18,8 +20,6 @@ interface MapCanvasProps {
   legendWidthOverride: number | null;
 }
 
-const ASPECT_W = 9;
-const ASPECT_H = 11;
 const PATTERN_ID_PREFIX = 'chor';
 
 export default function MapCanvas({
@@ -53,23 +53,25 @@ export default function MapCanvas({
 
   const { svgW, svgH } = useMemo(() => {
     if (box.w === 0 || box.h === 0) return { svgW: 0, svgH: 0 };
-    const byW = { w: box.w, h: (box.w * ASPECT_H) / ASPECT_W };
-    const byH = { w: (box.h * ASPECT_W) / ASPECT_H, h: box.h };
+    const { w: aw, h: ah } = MAP_UNIT_ASPECT[state.unit];
+    const byW = { w: box.w, h: (box.w * ah) / aw };
+    const byH = { w: (box.h * aw) / ah, h: box.h };
     const fit = byW.h <= box.h ? byW : byH;
     return { svgW: Math.floor(fit.w), svgH: Math.floor(fit.h) };
-  }, [box]);
+  }, [box, state.unit]);
 
   const pathFn = useMemo(() => {
     if (geo.status !== 'ready' || svgW === 0) return null;
-    const projection = geoMercator().fitSize([svgW, svgH], geo.data);
+    const projection = createProjection(state.unit, svgW, svgH, geo.data);
     return geoPath(projection);
-  }, [geo, svgW, svgH]);
+  }, [geo, svgW, svgH, state.unit]);
 
   const features: Feature<GeoJSON.Geometry, RegionProps>[] =
     geo.status === 'ready' ? geo.data.features : [];
 
+  const isWorld = MAP_UNIT_SCOPE[state.unit] === 'world';
   const strokeColor = state.unit === 'sido' ? '#334155' : '#64748b';
-  const strokeWidth = state.unit === 'sido' ? 1.5 : 0.6;
+  const strokeWidth = state.unit === 'sido' ? 1.5 : isWorld ? 0.5 : 0.6;
 
   const fillMode = state.fillMode ?? 'color';
   const patternBins = useMemo(() => {

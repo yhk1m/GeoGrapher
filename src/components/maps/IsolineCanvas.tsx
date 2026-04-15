@@ -1,12 +1,13 @@
 // © 2026 김용현
 // 등치선도 — IDW 보간 → 그리드 → d3-contour → SVG path
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { geoMercator, geoPath } from 'd3-geo';
+import { geoPath } from 'd3-geo';
 import { contours as d3contours } from 'd3-contour';
 import type { Feature } from 'geojson';
 import type { IsolineState, RegionProps } from './types';
+import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE, getBasePaletteColors } from './types';
+import { createProjection } from './projection';
 import { useGeoData } from './useGeoData';
-import { getBasePaletteColors } from './types';
 
 interface Props {
   state: IsolineState;
@@ -15,9 +16,6 @@ interface Props {
   legendScale: number;
   legendWidthOverride: number | null;
 }
-
-const ASPECT_W = 9;
-const ASPECT_H = 11;
 
 export default function IsolineCanvas({
   state,
@@ -47,11 +45,12 @@ export default function IsolineCanvas({
 
   const { svgW, svgH } = useMemo(() => {
     if (box.w === 0 || box.h === 0) return { svgW: 0, svgH: 0 };
-    const byW = { w: box.w, h: (box.w * ASPECT_H) / ASPECT_W };
-    const byH = { w: (box.h * ASPECT_W) / ASPECT_H, h: box.h };
+    const { w: aw, h: ah } = MAP_UNIT_ASPECT[state.unit];
+    const byW = { w: box.w, h: (box.w * ah) / aw };
+    const byH = { w: (box.h * aw) / ah, h: box.h };
     const fit = byW.h <= box.h ? byW : byH;
     return { svgW: Math.floor(fit.w), svgH: Math.floor(fit.h) };
-  }, [box]);
+  }, [box, state.unit]);
 
   // 휠 줌
   useEffect(() => {
@@ -107,7 +106,7 @@ export default function IsolineCanvas({
     if (geo.status !== 'ready' || svgW === 0) {
       return { pathFn: null, features: [] as Feature<GeoJSON.Geometry, RegionProps>[], mapOutlinePath: '', points: [] as { x: number; y: number; v: number; name: string }[] };
     }
-    const projection = geoMercator().fitSize([svgW, svgH], geo.data);
+    const projection = createProjection(state.unit, svgW, svgH, geo.data);
     const path = geoPath(projection);
     const pts: { x: number; y: number; v: number; name: string }[] = [];
     for (const f of geo.data.features) {
@@ -120,7 +119,7 @@ export default function IsolineCanvas({
     // 전체 지도 외곽선 (클리핑용): 모든 feature의 path 합쳐서 단일 문자열
     const outline = geo.data.features.map((f) => path(f) ?? '').join(' ');
     return { pathFn: path, features: geo.data.features, mapOutlinePath: outline, points: pts };
-  }, [geo, svgW, svgH, state.values]);
+  }, [geo, svgW, svgH, state.values, state.unit]);
 
   // IDW 보간으로 그리드 생성
   const gridData = useMemo(() => {
@@ -284,7 +283,7 @@ export default function IsolineCanvas({
                 d={d}
                 fill="#f8fafc"
                 stroke="#cbd5e1"
-                strokeWidth={state.unit === 'sido' ? 1 : 0.4}
+                strokeWidth={state.unit === 'sido' ? 1 : MAP_UNIT_SCOPE[state.unit] === 'world' ? 0.5 : 0.4}
                 vectorEffect="non-scaling-stroke"
               />
             );
