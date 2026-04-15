@@ -202,7 +202,7 @@ export default function FlowMapCanvas({
                   fill="none"
                   stroke={color}
                   strokeWidth={width}
-                  strokeLinecap={markerId ? 'butt' : 'round'}
+                  strokeLinecap={state.arrowStyle === 'triangle' ? 'butt' : 'round'}
                   markerEnd={markerId ? `url(#${markerId})` : undefined}
                   vectorEffect="non-scaling-stroke"
                 />
@@ -235,7 +235,7 @@ function ArrowMarker({ id, color, style }: { id: string; color: string; style: '
     );
   }
   return (
-    <marker id={id} viewBox="0 0 10 10" refX={1} refY={5} markerWidth={3.5} markerHeight={3.5} orient="auto-start-reverse" markerUnits="strokeWidth">
+    <marker id={id} viewBox="0 0 10 10" refX={9} refY={5} markerWidth={3.5} markerHeight={3.5} orient="auto-start-reverse" markerUnits="strokeWidth">
       <path d="M0,0 L10,5 L0,10" fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="miter" />
     </marker>
   );
