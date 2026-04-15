@@ -44,7 +44,7 @@ export default function AnnouncementModal({ onClose, onNavigate }: Props) {
         </div>
 
         <p style={styles.lead}>
-          수능·모의고사 출제에 자주 쓰이는 <strong>통계지도 4종</strong>을 GeoGrapher에서 바로 제작할 수 있습니다.
+          시험문제 출제, 수업 자료 등에 자주 쓰이는 <strong>통계지도 4종</strong>을 GeoGrapher에서 바로 제작할 수 있습니다.
           시·도, 시·군·구, 시·군·구(광역 통합) 단위를 지원하며 고해상도 PNG로 내보낼 수 있습니다.
         </p>
 
