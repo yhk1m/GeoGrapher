@@ -5,7 +5,7 @@ import { geoPath } from 'd3-geo';
 import type { Feature } from 'geojson';
 import type { FlowMapState, RegionProps } from './types';
 import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE } from './types';
-import { createProjection } from './projection';
+import { createProjection, featureCentroid } from './projection';
 import { useGeoData } from './useGeoData';
 
 interface Props {
@@ -67,7 +67,7 @@ export default function FlowMapCanvas({
     for (const f of geo.data.features) {
       const code = String(f.properties.code ?? '');
       if (!code) continue;
-      const [cx, cy] = path.centroid(f);
+      const [cx, cy] = featureCentroid(path, f);
       if (isFinite(cx) && isFinite(cy)) c.set(code, [cx, cy]);
     }
     return { pathFn: path, features: geo.data.features, centroids: c };

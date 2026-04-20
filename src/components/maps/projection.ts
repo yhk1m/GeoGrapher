@@ -1,9 +1,9 @@
 // © 2026 김용현
 // 지도 단위별 투영법 선택
-import { geoMercator, type GeoProjection } from 'd3-geo';
+import { geoMercator, type GeoPath, type GeoProjection } from 'd3-geo';
 // @ts-expect-error d3-geo-projection 타입 선언 없음
 import { geoMiller } from 'd3-geo-projection';
-import type { FeatureCollection } from 'geojson';
+import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson';
 import type { MapUnit, RegionProps } from './types';
 import { MAP_UNIT_SCOPE } from './types';
 
@@ -26,4 +26,32 @@ export function createProjection(
   }
   // 한국: Mercator
   return geoMercator().fitSize([width, height], data);
+}
+
+// MultiPolygon에서 가장 큰 폴리곤의 centroid를 반환.
+// 프랑스(본토 + 기아나 + 코르시카), 미국(본토 + 알래스카 + 하와이) 등
+// 해외 영토를 가진 나라에서 전체 MultiPolygon centroid가 바다에 찍히는 문제를 해결.
+export function featureCentroid(
+  path: GeoPath,
+  feature: Feature<Geometry, RegionProps>,
+): [number, number] {
+  const geom = feature.geometry;
+  if (geom?.type === 'MultiPolygon' && geom.coordinates.length > 1) {
+    let bestArea = -Infinity;
+    let best: [number, number] = [NaN, NaN];
+    for (const coords of geom.coordinates) {
+      const sub: Feature<Polygon, RegionProps> = {
+        type: 'Feature',
+        properties: feature.properties,
+        geometry: { type: 'Polygon', coordinates: coords },
+      };
+      const area = Math.abs(path.area(sub));
+      if (area > bestArea) {
+        bestArea = area;
+        best = path.centroid(sub);
+      }
+    }
+    return best;
+  }
+  return path.centroid(feature);
 }

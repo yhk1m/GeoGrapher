@@ -6,7 +6,7 @@ import { contours as d3contours } from 'd3-contour';
 import type { Feature } from 'geojson';
 import type { IsolineState, RegionProps } from './types';
 import { MAP_UNIT_ASPECT, MAP_UNIT_SCOPE, getBasePaletteColors } from './types';
-import { createProjection } from './projection';
+import { createProjection, featureCentroid } from './projection';
 import { useGeoData } from './useGeoData';
 
 interface Props {
@@ -112,7 +112,7 @@ export default function IsolineCanvas({
     for (const f of geo.data.features) {
       const code = String(f.properties.code ?? '');
       if (state.values[code] == null) continue;
-      const [cx, cy] = path.centroid(f);
+      const [cx, cy] = featureCentroid(path, f);
       if (!isFinite(cx) || !isFinite(cy)) continue;
       pts.push({ x: cx, y: cy, v: state.values[code], name: f.properties.name });
     }
