@@ -292,10 +292,9 @@ function renderPieChart(
   const refR = Math.min(singleColW * 0.4, (plotH - labelSpace) * 0.4);
   const desiredR = refR * pieScale;
 
-  // 그리드: 열 수 계산 (겹치지 않도록)
-  const cols = n === 1
-    ? 1
-    : Math.max(1, Math.min(n, Math.floor(plotW / (desiredR * 2 + minGap))));
+  // 그리드: 카테고리 수 기반 결정 (캔버스 크기와 독립 — 화면/PNG 일관성 보장)
+  // n <= 5: 한 줄, n >= 6: ceil(sqrt(n)) 으로 그리드 구성
+  const cols = n <= 5 ? n : Math.ceil(Math.sqrt(n));
   const rows = Math.ceil(n / cols);
   const colW = plotW / cols;
   const rowH = plotH / rows;
@@ -359,7 +358,7 @@ function renderPieChart(
   // 제목
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
 
-  // 범례
+  // 범례 — 원 그래프 실제 영역(우측 끝 / 하단 끝) 기준으로 위치
   if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
@@ -367,11 +366,33 @@ function renderPieChart(
       bordered: isLightFill(i),
       label,
     }));
-    drawLegend({
-      ctx, items, position: legendPos,
-      plotX, plotY, plotW, plotH,
-      fontSize: options.fontSize.dataLabel * 0.85 + 5,
-    });
+    if (legendPos === 'right') {
+      const rightmostCol = Math.min(cols - 1, n - 1);
+      const rightmostCx = plotX + colW * rightmostCol + colW / 2;
+      const effectivePlotW = rightmostCx + maxR - plotX;
+      // 마지막 행 원의 하단까지를 유효 plotH로 사용 (범례를 원 옆에 정렬)
+      const lastRow = rows - 1;
+      const lastCy = plotY + rowH * lastRow + (rowH - labelSpace) / 2;
+      const pieBottom = lastCy + maxR + 12 + options.fontSize.tick;
+      const effectivePlotH = pieBottom - plotY;
+      drawLegend({
+        ctx, items, position: legendPos,
+        plotX, plotY, plotW: effectivePlotW, plotH: effectivePlotH,
+        fontSize: options.fontSize.dataLabel * 0.85 + 5,
+      });
+    } else {
+      // 하단: 가장 아래 행의 원+카테고리 라벨 하단까지를 기준으로
+      const lastRow = rows - 1;
+      const lastCy = plotY + rowH * lastRow + (rowH - labelSpace) / 2;
+      const pieBottom = lastCy + maxR + 12 + options.fontSize.tick;
+      const effectivePlotH = pieBottom - plotY;
+      drawLegend({
+        ctx, items, position: legendPos,
+        plotX, plotY, plotW, plotH: effectivePlotH,
+        fontSize: options.fontSize.dataLabel * 0.85 + 5,
+        bottomOffset: 16,
+      });
+    }
   }
 
   // 출처 + 각주
