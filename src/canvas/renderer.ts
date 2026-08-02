@@ -55,6 +55,10 @@ export function fillTextMultiline(
 
 /** 적절한 눈금 간격을 자동 계산 */
 export function niceStep(range: number, maxTicks: number = 8): number {
+  // 간격 0을 돌려주면 안 된다. 호출부는 `for (v = step; v <= max; v += step)`
+  // 꼴로 눈금을 그리므로 step 이 0 이면 영원히 돈다(동기 루프라 탭이 멎는다).
+  // 범위가 0·음수·NaN 인 경우가 여기 해당한다.
+  if (!Number.isFinite(range) || range <= 0) return 1;
   const rough = range / maxTicks;
   const pow = Math.pow(10, Math.floor(Math.log10(rough)));
   const norm = rough / pow;
@@ -74,7 +78,14 @@ export function autoRange(
   if (values.length === 0) return { min: 0, max: 100, step: 20 };
   let min = Math.min(...values);
   let max = Math.max(...values);
-  if (min === max) {
+  // 값이 사실상 하나뿐이면 범위를 벌린다.
+  //
+  // `min === max` 로만 판정하면 부동소수점 오차로 미세하게 갈린 값들이
+  // 빠져나간다. 예를 들어 편차 그래프에서 모든 달에 같은 값을 더하면
+  // 3.0000000000000004 와 2.9999999999999996 이 섞여 나온다. 그러면
+  // step 이 1e-16 수준이 되어 눈금 루프가 6e16 번 돌고 화면이 멎는다.
+  // 그래서 절대 크기에 비례한 허용 오차로 판정한다.
+  if (!(max - min > Math.max(Math.abs(min), Math.abs(max)) * 1e-9)) {
     min -= 10;
     max += 10;
   }
