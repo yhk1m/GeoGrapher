@@ -392,6 +392,11 @@ export interface AbsBarGraphData {
   unit: string;
   yRange: { min: number; max: number; auto: boolean; step?: number };
   fitMax?: boolean; // 최댓값에 맞추기
+  /**
+   * 계열별 채움색 직접 지정. 미지정이면 기존 팔레트(getStackedFill)를 쓴다.
+   * 원본 시험지를 재현할 때 기본 팔레트와 색이 다른 경우에 쓴다.
+   */
+  seriesFills?: string[];
 }
 
 export function createDefaultAbsBarData(): AbsBarGraphData {

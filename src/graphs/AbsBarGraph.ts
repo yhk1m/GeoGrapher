@@ -113,7 +113,7 @@ export function renderAbsBarGraph(
           const y = valToY(cumVal + val);
           const barH = valToY(cumVal) - y;
 
-          ctx.fillStyle = getStackedFill(ctx, s);
+          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(cx - barW / 2, y, barW, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
@@ -141,7 +141,7 @@ export function renderAbsBarGraph(
           const barH = valToY(axis.min) - by;
           const bx = groupStart + barW * s;
 
-          ctx.fillStyle = getStackedFill(ctx, s);
+          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, by, barW, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
@@ -240,7 +240,7 @@ export function renderAbsBarGraph(
           const bx = valToX(cumVal);
           const bw = valToX(cumVal + val) - bx;
 
-          ctx.fillStyle = getStackedFill(ctx, s);
+          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, cy - barH / 2, bw, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
@@ -268,7 +268,7 @@ export function renderAbsBarGraph(
           const bw = valToX(val) - bx;
           const by = groupStart + barH * s;
 
-          ctx.fillStyle = getStackedFill(ctx, s);
+          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, by, bw, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
