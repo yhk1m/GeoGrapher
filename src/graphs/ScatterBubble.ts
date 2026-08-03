@@ -550,6 +550,11 @@ function drawBubbleLegend(
   const circleX = boxX + pad + maxR;
   const bottomCircleY = boxY + boxH - pad;
 
+  // 작은 원끼리는 지시선 높이가 거의 같아 라벨이 겹친다.
+  // 열은 고정하고 위아래로만 밀어 준다.
+  const labelPlacer = new LabelPlacer();
+  const labelFontSize = fs.dataLabel * 0.85;
+
   for (const size of uniqueSteps) {
     const r = (size / maxSize) * maxR;
     const cy = bottomCircleY - r;
@@ -574,10 +579,11 @@ function drawBubbleLegend(
     ctx.restore();
 
     ctx.fillStyle = '#000';
-    ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(labelOf(size), circleX + maxR + 16, lineY);
+    ctx.font = getFont(labelFontSize, font, cf, 'bold');
+    labelPlacer.placeInColumn(ctx, labelOf(size), circleX + maxR + 16, lineY - labelFontSize / 2, {
+      lineHeight: labelFontSize * 1.15,
+      bounds: { left: boxX, right: boxX + boxW, top: boxY, bottom: boxY + boxH },
+    });
   }
 
   return boxH;
