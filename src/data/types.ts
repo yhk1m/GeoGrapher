@@ -255,6 +255,12 @@ export interface ScatterGraphData {
    * 편차 모드에서만 쓴다.
    */
   boxedAxisLabels?: boolean;
+  /**
+   * 눈금과 눈금 숫자를 가운데 십자선 축에 붙인다. 미지정이면 플롯 가장자리에 붙인다.
+   * 테두리를 끄면(showFrame: false) 가장자리에 붙은 눈금이 허공에 뜨므로 함께 쓴다.
+   * 편차 모드에서만 쓴다.
+   */
+  ticksOnAxis?: boolean;
   // 편차 모드 전용
   quadrantLabels: [string, string, string, string]; // 1사분면(우상), 2(좌상), 3(좌하), 4(우하)
 }

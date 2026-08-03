@@ -266,6 +266,10 @@ function renderDeviation(
   ctx.textBaseline = 'top';
   ctx.fillText('0', originX - 6, originY + 4);
 
+  // 눈금을 어디에 붙일지 — 기본은 플롯 가장자리, ticksOnAxis 면 가운데 십자선
+  const xTickBase = data.ticksOnAxis ? originY : plotY + plotH;
+  const yTickBase = data.ticksOnAxis ? originX : plotX;
+
   // X축 눈금
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -274,10 +278,10 @@ function renderDeviation(
     const x = toCanvasX(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x, plotY + plotH);
-    ctx.lineTo(x, plotY + plotH + 6);
+    ctx.moveTo(x, xTickBase);
+    ctx.lineTo(x, xTickBase + 6);
     ctx.stroke();
-    ctx.fillText(formatTick(v), x, plotY + plotH + 10);
+    ctx.fillText(formatTick(v), x, xTickBase + 10);
   }
 
   // Y축 눈금
@@ -288,10 +292,10 @@ function renderDeviation(
     const y = toCanvasY(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(plotX - 6, y);
-    ctx.lineTo(plotX, y);
+    ctx.moveTo(yTickBase - 6, y);
+    ctx.lineTo(yTickBase, y);
     ctx.stroke();
-    ctx.fillText(formatTick(v), plotX - 10, y);
+    ctx.fillText(formatTick(v), yTickBase - 10, y);
   }
 
   // 축 라벨
