@@ -528,7 +528,22 @@ function drawBubbleLegend(
   ctx.restore();
   const pad = 14;
   const boxW = maxR * 2 + labelW + pad * 2 + 20;
-  const boxH = maxR * 2 + pad * 2 + 10;
+
+  // 라벨 세로 위치를 먼저 잡는다.
+  // 원 크기 차이가 크면 작은 원들의 지시선 높이가 거의 같아 라벨이 겹치므로
+  // 아래로 밀어 간격을 확보하는데, 그만큼 상자도 커져야 라벨이 안 잘린다.
+  // (원 바닥을 0 으로 놓은 상대 좌표. 음수가 위쪽이다.)
+  const labelFontSize = fs.dataLabel * 0.85;
+  const labelGap = labelFontSize * 1.2;
+  const labelOffsets: number[] = [];
+  let cursor = -Infinity;
+  for (const size of uniqueSteps) {
+    const r = (size / maxSize) * maxR;
+    cursor = Math.max(-2 * r, cursor + labelGap);
+    labelOffsets.push(cursor);
+  }
+  const lowest = Math.max(0, ...labelOffsets) + labelFontSize / 2;
+  const boxH = maxR * 2 + lowest + pad * 2 + 10;
 
   // 위치 계산
   const pos = data.bubbleLegendPosition || 'bottom-right';
@@ -548,15 +563,9 @@ function drawBubbleLegend(
   ctx.stroke();
 
   const circleX = boxX + pad + maxR;
-  const bottomCircleY = boxY + boxH - pad;
+  const bottomCircleY = boxY + boxH - pad - lowest;
 
-  // 작은 원끼리는 지시선 높이가 거의 같아 라벨이 겹친다.
-  // 크기 순서(큰 것이 위)는 지켜야 하므로, 아래로만 밀어 최소 간격을 확보한다.
-  const labelFontSize = fs.dataLabel * 0.85;
-  const labelGap = labelFontSize * 1.2;
-  let lastLabelY = -Infinity;
-
-  for (const size of uniqueSteps) {
+  uniqueSteps.forEach((size, si) => {
     const r = (size / maxSize) * maxR;
     const cy = bottomCircleY - r;
 
@@ -579,15 +588,12 @@ function drawBubbleLegend(
     ctx.stroke();
     ctx.restore();
 
-    const labelY = Math.max(lineY, lastLabelY + labelGap);
-    lastLabelY = labelY;
-
     ctx.fillStyle = '#000';
     ctx.font = getFont(labelFontSize, font, cf, 'bold');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(labelOf(size), circleX + maxR + 16, labelY);
-  }
+    ctx.fillText(labelOf(size), circleX + maxR + 16, bottomCircleY + labelOffsets[si]);
+  });
 
   return boxH;
 }
