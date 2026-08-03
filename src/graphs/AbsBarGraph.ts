@@ -176,7 +176,7 @@ export function renderAbsBarGraph(
 
     // X축 라벨 (클리핑 밖에서).
     // 편차 그래프는 라벨이 플롯 아래가 아니라 0선 바로 아래에 붙는다.
-    const labelY = data.zeroBaseline ? baseY + 6 : plotY + plotH + 12;
+    const labelY = data.categoryLabelAtBaseline ? baseY + 6 : plotY + plotH + 12;
     for (let c = 0; c < n; c++) {
       const cx = plotX + catArea * c + catArea / 2;
       ctx.fillStyle = '#000';

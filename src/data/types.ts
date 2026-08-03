@@ -399,13 +399,19 @@ export interface AbsBarGraphData {
    */
   seriesFills?: string[];
   /**
-   * 0을 기준으로 막대를 그린다. 음수는 0에서 아래로 내려가고, 0 위치에
-   * 실선을 긋고, 범주 라벨도 그 선 아래에 붙는다 (편차 그래프 관습).
+   * 0을 기준으로 막대를 그린다. 음수는 0에서 아래로 내려가고 0 위치에 실선을 긋는다.
    *
    * 미지정이면 기존대로 축 바닥에서 막대가 자란다. 축이 음수까지 내려가는
    * 편차 그래프에서는 그 방식이 막대를 허공에 띄운 것처럼 보이게 한다.
    */
   zeroBaseline?: boolean;
+  /**
+   * 범주 라벨을 0선 바로 아래에 놓는다. 미지정이면 플롯 아래(축 바깥)에 놓는다.
+   *
+   * 시험지마다 다르다 — 2026 수능 한국지리 6번은 0선 아래, 2025 수능
+   * 세계지리 19번은 플롯 아래다. 그래서 zeroBaseline 과 따로 둔다.
+   */
+  categoryLabelAtBaseline?: boolean;
 }
 
 export function createDefaultAbsBarData(): AbsBarGraphData {
