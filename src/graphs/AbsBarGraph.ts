@@ -17,7 +17,7 @@ export function renderAbsBarGraph(
 
   const showLegend = options.showLegend;
   const legendPos = options.legendPosition;
-  const legendW = (showLegend && legendPos === 'right')
+  const legendW = (showLegend && legendPos === 'right' && !data.insideLegend)
     ? measureLegendWidth(ctx, data.seriesLabels, options.fontSize.dataLabel * 0.85 + 5)
     : 0;
 
@@ -27,17 +27,39 @@ export function renderAbsBarGraph(
   const n = data.categories.length;
   const sCount = data.seriesLabels.length;
 
+  // 2단 라벨(가로 전용) — 바깥 라벨이 들어갈 만큼 왼쪽 여백을 넓힌다
+  const hasGroups = !isVertical && !!data.groups && data.groups.length > 0;
+  let groupLabelW = 0;
+  let catLabelW = 0;
+  let unitW = 0;
+  if (hasGroups || data.unitAdjacent || data.insideLegend) {
+    ctx.save();
+    ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
+    if (hasGroups) {
+      groupLabelW = widestLabel(ctx, data.groups!.map((g) => g.label));
+      catLabelW = widestLabel(ctx, data.categories.map((c) => c.label));
+    }
+    ctx.font = getFont(options.fontSize.axisLabel, font, customFont, 'bold');
+    unitW = ctx.measureText(data.unit).width;
+    ctx.restore();
+  }
+
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: isVertical ? 60 + legendW : 160 + legendW,
+    right: isVertical
+      ? 60 + legendW
+      : (data.unitAdjacent ? 40 + unitW : 160 + legendW),
     bottom: (() => {
       let b = isVertical ? 70 : 60;
-      if (showLegend && legendPos === 'bottom') b += 60;
+      // 플롯 안에 범례를 그릴 때는 아래에 자리를 비워 둘 이유가 없다
+      if (showLegend && legendPos === 'bottom' && !data.insideLegend) b += 60;
       if (options.source) b += 30;
       b += options.footnotes.filter(f => f.trim()).length * 22;
       return b;
     })(),
-    left: isVertical ? 130 : 100,
+    left: isVertical
+      ? 130
+      : (hasGroups ? 20 + groupLabelW + 14 + catLabelW + 12 : 100),
   };
 
   const plotX = padding.left;
@@ -69,6 +91,12 @@ export function renderAbsBarGraph(
     const dataMax = Math.max(...allValues);
     axis = { ...axis, max: dataMax };
   }
+
+  // 플롯 안 범례가 막대를 덮지 않도록, 그린 막대 자리를 모아 둔다
+  const barRects: { x0: number; y0: number; x1: number; y1: number }[] = [];
+  const noteBar = (x: number, y: number, bw: number, bh: number) => {
+    if (data.insideLegend) barRects.push({ x0: x, y0: y, x1: x + bw, y1: y + bh });
+  };
 
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
@@ -119,6 +147,7 @@ export function renderAbsBarGraph(
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(cx - barW / 2, y, barW, barH);
+          noteBar(cx - barW / 2, y, barW, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
           ctx.strokeRect(cx - barW / 2, y, barW, barH);
@@ -147,6 +176,7 @@ export function renderAbsBarGraph(
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, by, barW, barH);
+          noteBar(bx, by, barW, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
           ctx.strokeRect(bx, by, barW, barH);
@@ -211,6 +241,7 @@ export function renderAbsBarGraph(
     ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
+    let lastTickHalfW = 0;
     for (let i = 0; i < ticks.length; i++) {
       const v = ticks[i];
       const x = plotX + ((v - axis.min) / (axis.max - axis.min)) * plotW;
@@ -221,6 +252,7 @@ export function renderAbsBarGraph(
       ctx.lineTo(x, plotY + plotH + 5);
       ctx.stroke();
       ctx.fillText(formatTick(v), x, plotY + plotH + 10);
+      if (i === ticks.length - 1) lastTickHalfW = ctx.measureText(formatTick(v)).width / 2;
 
       if (i > 0 && i < ticks.length - 1) {
         ctx.save();
@@ -235,12 +267,15 @@ export function renderAbsBarGraph(
       }
     }
 
-    // 단위 (축 맨 오른쪽)
+    // 단위 — 기본은 축 오른쪽에 떨어뜨리고, unitAdjacent 면 마지막 눈금 숫자에 바로 붙인다
     ctx.font = getFont(options.fontSize.axisLabel, font, customFont, 'bold');
     ctx.fillStyle = '#000';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(data.unit, plotX + plotW + 30, plotY + plotH + 10);
+    const unitX = data.unitAdjacent
+      ? plotX + plotW + lastTickHalfW + 2
+      : plotX + plotW + 30;
+    ctx.fillText(data.unit, unitX, plotY + plotH + 10);
 
     // 막대 (플롯 영역 클리핑)
     ctx.save();
@@ -249,11 +284,25 @@ export function renderAbsBarGraph(
     ctx.clip();
 
     const catArea = plotH / n;
+    // 그룹이 있으면 그룹 안 막대는 붙이고 그룹 사이는 벌린다.
+    // 그룹이 없으면 아래 식이 예전과 같은 값(칸 가운데)을 준다.
+    const barPitch = hasGroups ? catArea * 0.73 : catArea;
+    const centerY: number[] = [];
+    if (hasGroups) {
+      let first = 0;
+      for (const g of data.groups!) {
+        const blockTop = plotY + catArea * first + (catArea - barPitch) * g.span / 2;
+        for (let i = 0; i < g.span; i++) centerY.push(blockTop + barPitch * (i + 0.5));
+        first += g.span;
+      }
+    }
+    for (let c = centerY.length; c < n; c++) centerY.push(plotY + catArea * c + catArea / 2);
+
     const valToX = (v: number) => plotX + ((v - axis.min) / (axis.max - axis.min)) * plotW;
     if (data.stacked) {
-      const barH = Math.min(catArea * 0.5, 80);
+      const barH = hasGroups ? Math.min(barPitch * 0.74, 80) : Math.min(catArea * 0.5, 80);
       for (let c = 0; c < n; c++) {
-        const cy = plotY + catArea * c + catArea / 2;
+        const cy = centerY[c];
         let cumVal = 0;
         for (let s = 0; s < sCount; s++) {
           const val = data.categories[c].values[s] || 0;
@@ -262,6 +311,7 @@ export function renderAbsBarGraph(
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, cy - barH / 2, bw, barH);
+          noteBar(bx, cy - barH / 2, bw, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
           ctx.strokeRect(bx, cy - barH / 2, bw, barH);
@@ -281,7 +331,7 @@ export function renderAbsBarGraph(
       const groupH = Math.min(catArea * 0.7, sCount * 60);
       const barH = groupH / sCount;
       for (let c = 0; c < n; c++) {
-        const groupStart = plotY + catArea * c + (catArea - groupH) / 2;
+        const groupStart = centerY[c] - groupH / 2;
         for (let s = 0; s < sCount; s++) {
           const val = data.categories[c].values[s] || 0;
           const bx = valToX(axis.min);
@@ -290,6 +340,7 @@ export function renderAbsBarGraph(
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(bx, by, bw, barH);
+          noteBar(bx, by, bw, barH);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = 0.8;
           ctx.strokeRect(bx, by, bw, barH);
@@ -307,13 +358,23 @@ export function renderAbsBarGraph(
     ctx.restore(); // 클리핑 해제
 
     // Y축 라벨 (클리핑 밖에서)
+    const catLabelX = hasGroups ? plotX - 12 : plotX - 10;
     for (let c = 0; c < n; c++) {
-      const cy = plotY + catArea * c + catArea / 2;
       ctx.fillStyle = '#000';
       ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(data.categories[c].label, plotX - 10, cy);
+      ctx.fillText(data.categories[c].label, catLabelX, centerY[c]);
+    }
+
+    // 바깥(2단) 라벨 — 그룹이 차지한 칸의 한가운데에 놓는다
+    if (hasGroups) {
+      let first = 0;
+      for (const g of data.groups!) {
+        const cy = plotY + catArea * first + (catArea * g.span) / 2;
+        ctx.fillText(g.label, catLabelX - catLabelW - 14, cy);
+        first += g.span;
+      }
     }
   }
 
@@ -321,7 +382,52 @@ export function renderAbsBarGraph(
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
   // 범례
-  if (showLegend) {
+  if (showLegend && data.insideLegend) {
+    // 시험지는 범례를 플롯 안쪽 모서리에 작은 상자로 둔다.
+    // 막대와 겹치는 모서리는 피한다 — 어느 나라를 고르든 가려지면 안 된다.
+    ctx.save();
+    const fs = options.fontSize.dataLabel * 0.9;
+    ctx.font = getFont(fs, font, customFont, 'bold');
+    const rowH = fs * 1.5;
+    const swatch = fs * 0.95;
+    const padX = 8;
+    const boxW = padX * 2 + swatch + 8 + widestLabel(ctx, data.seriesLabels);
+    const boxH = rowH * sCount + 8;
+    const margin = 8;
+
+    const spotAt = (corner: string) => ({
+      x: corner.endsWith('right') ? plotX + plotW - boxW - margin : plotX + margin,
+      y: corner.startsWith('top') ? plotY + margin : plotY + plotH - boxH - margin,
+    });
+    const order = data.insideLegend === 'top-left'
+      ? ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+      : ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+    const clear = (s: { x: number; y: number }) => !barRects.some(
+      (b) => b.x0 < s.x + boxW && b.x1 > s.x && b.y0 < s.y + boxH && b.y1 > s.y
+    );
+    const spots = order.map(spotAt);
+    const spot = spots.find(clear) ?? spots[0];
+
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(spot.x, spot.y, boxW, boxH);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.strokeRect(spot.x, spot.y, boxW, boxH);
+
+    for (let i = 0; i < sCount; i++) {
+      const cy = spot.y + 4 + rowH * (i + 0.5);
+      ctx.fillStyle = data.seriesFills?.[i] ?? getStackedFill(ctx, i);
+      ctx.fillRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(data.seriesLabels[i], spot.x + padX + swatch + 8, cy);
+    }
+    ctx.restore();
+  } else if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
       // 막대와 같은 채움을 쓴다 — seriesFills 를 준 경우 범례도 그 색이어야 한다

@@ -461,6 +461,29 @@ export interface AbsBarGraphData {
    * 세계지리 19번은 플롯 아래다. 그래서 zeroBaseline 과 따로 둔다.
    */
   categoryLabelAtBaseline?: boolean;
+  /**
+   * 범주를 묶어 2단 라벨로 만든다 (가로 막대 전용).
+   *
+   * 시험지에서 흔한 형태다 — 바깥 라벨이 A·B·C, 안쪽 라벨이 1990년·2020년.
+   * `span` 은 그 그룹에 속한 범주 개수이고, 합이 categories 길이와 같아야 한다.
+   * 그룹 안 막대는 서로 붙고 그룹 사이는 벌어진다.
+   *
+   * 미지정이면 기존대로 범주마다 라벨 하나를 고르게 배치한다.
+   */
+  groups?: { label: string; span: number }[];
+  /**
+   * 범례를 플롯 안쪽 모서리에 작은 상자로 둔다.
+   *
+   * 미지정이면 기존대로 options.legendPosition 을 따라 플롯 바깥에 그린다.
+   */
+  insideLegend?: 'top-right' | 'top-left';
+  /**
+   * 단위를 마지막 눈금 숫자 바로 옆에 붙인다 (가로 막대 전용).
+   *
+   * 원본 시험지는 축 끝이 `100(EJ)` 처럼 붙어 있다.
+   * 미지정이면 기존대로 축 오른쪽에 조금 떨어뜨려 그린다.
+   */
+  unitAdjacent?: boolean;
 }
 
 export function createDefaultAbsBarData(): AbsBarGraphData {
