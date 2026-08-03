@@ -239,8 +239,9 @@ export interface ScatterGraphData {
   yLabel: string;
   xUnit: string;
   yUnit: string;
-  xRange: { min: number; max: number; auto: boolean };
-  yRange: { min: number; max: number; auto: boolean };
+  /** step 을 주면 눈금 간격을 그 값으로 고정한다. 미지정이면 기존대로 자동 계산 */
+  xRange: { min: number; max: number; auto: boolean; step?: number };
+  yRange: { min: number; max: number; auto: boolean; step?: number };
   showBubble: boolean;
   bubbleScale: number; // 버블 최대 반지름 (px)
   // 편차 모드 전용
