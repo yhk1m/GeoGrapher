@@ -175,7 +175,8 @@ function renderDeviation(
   const fs = options.fontSize;
 
   const padding: Padding = {
-    top: options.title ? 100 : 50,
+    // 상자 축이름은 그래프 위에 놓이고 그 아래에 y 단위가 들어가므로 자리를 더 준다
+    top: options.title ? 100 : (data.boxedAxisLabels ? 120 : 50),
     // 상자 축이름은 플롯 오른쪽 바깥에 놓이므로 그때만 자리를 더 준다
     right: data.boxedAxisLabels ? 170 : 80,
     bottom: (() => {
@@ -333,8 +334,11 @@ function renderDeviation(
 
   if (data.boxedAxisLabels) {
     // 시험지 관습 — y 이름은 그래프 위, x 이름은 그래프 오른쪽에 상자로 둔다
-    drawBoxedLabel(ctx, data.yLabel, plotX + 4, plotY - 48, fs.axisLabel, 'below');
-    drawBoxedLabel(ctx, data.xLabel, plotX + plotW + 16, plotY + plotH / 2, fs.axisLabel, 'right');
+    // y 이름은 맨 위에 둔다 — 그 아래 자리는 y 단위가 쓴다.
+    drawBoxedLabel(ctx, data.yLabel, plotX + 4, 10, fs.axisLabel, 'below');
+    // x 이름은 x 단위 오른쪽에 둔다 — 둘 다 축 오른쪽 끝, 같은 줄이라 겹칠 수 있다.
+    const xUnitW = data.xUnit && data.ticksOnAxis ? ctx.measureText(data.xUnit).width + 14 : 0;
+    drawBoxedLabel(ctx, data.xLabel, plotX + plotW + 16 + xUnitW, plotY + plotH / 2, fs.axisLabel, 'right');
   } else {
     // Y축 라벨 (Y축 중간, 줄바꿈 지원)
     ctx.textAlign = 'right';
