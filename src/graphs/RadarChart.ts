@@ -219,7 +219,7 @@ export function renderRadarChart(
 
   const plotX = leftPad;
   const plotW = availW;
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
   drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 

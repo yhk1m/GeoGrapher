@@ -169,7 +169,7 @@ export function renderDeviationBGraph(
     });
   }
 
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
   drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel });
 }
 

@@ -170,7 +170,7 @@ function renderNormal(
     drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
   }
 
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
   drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
@@ -379,7 +379,7 @@ function renderDeviation(
     drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
   }
 
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
   drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 

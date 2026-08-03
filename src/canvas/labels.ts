@@ -7,16 +7,50 @@ interface TitleParams {
   plotW: number;
   title: string;
   fontSize: number;
+  /** 캔버스 전체 너비. 주면 제목이 넘칠 때 글자를 줄여 맞춘다. */
+  canvasWidth?: number;
 }
 
-export function drawTitle({ ctx, plotX, plotW, title, fontSize }: TitleParams) {
+/** 최소 이만큼까지는 줄인다. 더 줄이면 읽기 어렵다. */
+const MIN_SHRINK = 0.6;
+
+/**
+ * 주어진 폭에 들어가도록 글꼴 크기를 줄인다.
+ * 그래도 안 들어가면 마지막 수단으로 fillText 의 maxWidth 로 눌러 담는다.
+ */
+function fitFontSize(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  fontSize: number,
+  available: number,
+  makeFont: (size: number) => string
+): number {
+  if (available <= 0) return fontSize;
+  ctx.font = makeFont(fontSize);
+  const w = ctx.measureText(text).width;
+  if (w <= available) return fontSize;
+  const scaled = Math.max(fontSize * MIN_SHRINK, fontSize * (available / w));
+  return Math.floor(scaled);
+}
+
+export function drawTitle({ ctx, plotX, plotW, title, fontSize, canvasWidth }: TitleParams) {
   if (!title) return;
   ctx.save();
   ctx.fillStyle = '#000';
-  ctx.font = `bold ${fontSize}px ${LABEL_FONT}`;
+
+  const makeFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
+  // 제목은 그래프 가운데에 놓이므로 캔버스 양쪽으로 넘칠 수 있다.
+  // 가운데를 기준으로 양쪽에서 좁은 쪽 × 2 가 실제로 쓸 수 있는 폭이다.
+  const centerX = plotX + plotW / 2;
+  const available = canvasWidth != null
+    ? Math.max(0, Math.min(centerX, canvasWidth - centerX) * 2 - 12)
+    : plotW;
+
+  const size = fitFontSize(ctx, title, fontSize, available, makeFont);
+  ctx.font = makeFont(size);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText(title, plotX + plotW / 2, 10);
+  ctx.fillText(title, centerX, 10, available > 0 ? available : undefined);
   ctx.restore();
 }
 
@@ -51,21 +85,31 @@ export function drawSourceAndFootnote({
   const sourceH = source ? fontSize + 4 : 0;
   let y = height - 6 - totalFootnoteH;
 
+  // 각주는 왼쪽 끝에서 시작해 오른쪽으로 흐른다. 캔버스를 넘으면 잘리므로
+  // 쓸 수 있는 폭을 미리 재 두고, 넘치는 글은 글꼴을 줄여 맞춘다.
+  const rightEdge = canvasWidth != null ? canvasWidth - 8 : plotX + plotW;
+  const available = Math.max(0, rightEdge - leftX);
+
   if (source) {
     ctx.fillStyle = '#555';
-    ctx.font = `bold ${fontSize}px ${LABEL_FONT}`;
+    const makeFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
+    const size = fitFontSize(ctx, source, fontSize, available, makeFont);
+    ctx.font = makeFont(size);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(source, rightX, y);
+    ctx.fillText(source, rightX, y, available > 0 ? available : undefined);
     y += sourceH;
   }
 
   for (let i = 0; i < filtered.length; i++) {
+    const text = '* ' + filtered[i];
     ctx.fillStyle = '#555';
-    ctx.font = `${fontSize * 0.9}px ${LABEL_FONT}`;
+    const makeFont = (size: number) => `${size}px ${LABEL_FONT}`;
+    const size = fitFontSize(ctx, text, fontSize * 0.9, available, makeFont);
+    ctx.font = makeFont(size);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('* ' + filtered[i], leftX, y);
+    ctx.fillText(text, leftX, y, available > 0 ? available : undefined);
     y += fontSize * 0.9 + 4;
   }
 
@@ -102,6 +146,50 @@ export class LabelPlacer {
     return this.used.some(
       (u) => !(box.right < u.left || box.left > u.right || box.bottom < u.top || box.top > u.bottom)
     );
+  }
+
+  /**
+   * 라벨을 **정해진 x 열에** 놓고, 겹치면 위아래로만 민다.
+   *
+   * 선 끝 이름처럼 여러 라벨이 한 줄로 나란해야 하는 경우에 쓴다.
+   * 일반 `place()` 는 8방향으로 움직여 가로 위치가 흐트러진다.
+   *
+   * @param x 라벨 왼쪽 끝 x (모든 라벨이 공유하는 열)
+   * @param preferredY 원래 놓고 싶은 y (라벨 상단)
+   */
+  placeInColumn(
+    ctx: CanvasRenderingContext2D,
+    label: string,
+    x: number,
+    preferredY: number,
+    opts: { lineHeight: number; bounds: LabelBox }
+  ) {
+    const w = ctx.measureText(label).width;
+    const h = opts.lineHeight;
+    const { bounds } = opts;
+    const stepY = h + 2;
+
+    // 원래 자리에서 시작해 위·아래로 번갈아 가며 빈 자리를 찾는다
+    for (let k = 0; k < 40; k++) {
+      const dy = Math.ceil(k / 2) * stepY * (k % 2 === 0 ? 1 : -1);
+      const y = preferredY + dy;
+      if (y < bounds.top || y + h > bounds.bottom) continue;
+
+      const box = { left: x, right: x + w, top: y, bottom: y + h };
+      if (!this.overlaps(box)) {
+        this.used.push(box);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(label, x, y);
+        return;
+      }
+    }
+
+    // 빈 자리를 못 찾으면 원래 자리에 그대로 둔다 (열은 유지)
+    this.used.push({ left: x, right: x + w, top: preferredY, bottom: preferredY + h });
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, x, preferredY);
   }
 
   /**

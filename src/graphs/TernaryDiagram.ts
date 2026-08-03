@@ -231,7 +231,7 @@ export function renderTernaryGraph(
   }
 
   // 제목
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
 
   // 출처 + 각주 — 삼각형 좌우 범위 기준

@@ -196,7 +196,7 @@ export function renderClimateGraph(
   }
 
   // 제목
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
   // (월) 라벨
   ctx.fillStyle = '#000';

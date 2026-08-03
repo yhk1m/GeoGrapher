@@ -318,7 +318,7 @@ export function renderAbsBarGraph(
   }
 
   // 제목
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
   // 범례
   if (showLegend) {

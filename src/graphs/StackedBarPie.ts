@@ -225,7 +225,7 @@ function renderStackedBar(
   }
 
   // 제목
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
   // 범례
   if (showLegend) {
@@ -356,7 +356,7 @@ function renderPieChart(
   }
 
   // 제목
-  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title });
+  drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: options.fontSize.title, canvasWidth: w });
 
   // 범례 — 원 그래프 실제 영역(우측 끝 / 하단 끝) 기준으로 위치
   if (showLegend) {
