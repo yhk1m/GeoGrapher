@@ -1,7 +1,7 @@
 // © 2026 김용현
 import { type ScatterGraphData, type GraphOptions } from '../data/types';
 import { type Padding, clearCanvas, getFont, autoRange, fillTextMultiline } from '../canvas/renderer';
-import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
+import { drawTitle, drawSourceAndFootnote, LabelPlacer, type LabelBox } from '../canvas/labels';
 
 export function renderScatterGraph(
   ctx: CanvasRenderingContext2D,
@@ -150,7 +150,8 @@ function renderNormal(
   fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
 
   // 데이터 포인트
-  drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels);
+  drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels,
+    { left: plotX, right: plotX + plotW, top: plotY, bottom: plotY + plotH });
 
   // 버블 크기 범례
   if (data.showBubble && data.points.length > 0) {
@@ -347,7 +348,8 @@ function renderDeviation(
   }
 
   // 데이터 포인트
-  drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels);
+  drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels,
+    { left: plotX, right: plotX + plotW, top: plotY, bottom: plotY + plotH });
 
   // 버블 크기 범례
   if (data.showBubble && data.points.length > 0) {
@@ -368,9 +370,20 @@ function drawPoints(
   fs: GraphOptions['fontSize'],
   font: GraphOptions['fontFamily'],
   cf: string,
-  showLabels: boolean
+  showLabels: boolean,
+  bounds?: LabelBox
 ) {
   const maxSize = data.points.length > 0 ? Math.max(...data.points.map((p) => p.size), 1) : 1;
+
+  // 라벨이 서로/점과 겹치지 않게 자리를 잡는다.
+  // 점을 먼저 전부 등록해야 라벨이 다른 점 위에 얹히지 않는다.
+  const placer = new LabelPlacer();
+  if (bounds) {
+    for (const pt of data.points) {
+      const r = data.showBubble && pt.size > 0 ? (pt.size / maxSize) * data.bubbleScale : 4;
+      placer.reserveCircle(toX(pt.x), toY(pt.y), r);
+    }
+  }
 
   for (const pt of data.points) {
     const cx = toX(pt.x);
@@ -403,12 +416,22 @@ function drawPoints(
     if (pt.label) {
       ctx.fillStyle = '#000';
       ctx.font = getFont(fs.dataLabel, font, cf, 'bold');
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
       const offset = data.showBubble && pt.size > 0
         ? (pt.size / maxSize) * data.bubbleScale + 4
         : 8;
-      ctx.fillText(pt.label, cx + offset, cy - 2);
+
+      if (bounds) {
+        placer.place(ctx, pt.label, cx, cy, {
+          gap: offset,
+          lineHeight: fs.dataLabel * 1.1,
+          bounds,
+        });
+      } else {
+        // 경계를 모르면 겹침 회피를 할 수 없다 — 기존처럼 오른쪽 위에 둔다
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(pt.label, cx + offset, cy - 2);
+      }
     }
 
     // 데이터 라벨 (좌표값)
