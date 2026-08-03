@@ -122,6 +122,8 @@ function renderNormal(
   const yTicks: number[] = [];
   for (let v = yMin; v <= yMax + yStep * 0.01; v += yStep) yTicks.push(v);
   const yStride = labelStride(plotH / Math.max(1, yTicks.length - 1), fs.tick * 1.1);
+  // 축 이름이 눈금 숫자를 밟지 않도록, 가장 넓은 숫자만큼 밀어낼 거리를 재 둔다
+  const yTickTextW = widestLabel(ctx, yTicks.map(formatTick));
   yTicks.forEach((v, i) => {
     const y = toCanvasY(v);
     ctx.lineWidth = 1;
@@ -157,7 +159,7 @@ function renderNormal(
   // Y축 라벨 (Y축 중간, 줄바꿈 지원)
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
+  fillTextMultiline(ctx, data.yLabel, plotX - 18 - yTickTextW, plotY + plotH / 2, fs.axisLabel * 1.3);
 
   // 데이터 포인트
   drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels,
@@ -308,6 +310,7 @@ function renderDeviation(
   const devYTicks: number[] = [];
   for (let v = -yLimit; v <= yLimit + yStep * 0.01; v += yStep) devYTicks.push(v);
   const devYStride = labelStride(plotH / Math.max(1, devYTicks.length - 1), fs.tick * 1.1);
+  const yTickTextW = widestLabel(ctx, devYTicks.map(formatTick));
   devYTicks.forEach((v, i) => {
     if (Math.abs(v) < yStep * 0.01) return;
     const y = toCanvasY(v);
@@ -364,7 +367,7 @@ function renderDeviation(
     // Y축 라벨 (Y축 중간, 줄바꿈 지원)
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
+    fillTextMultiline(ctx, data.yLabel, yTickBase - 18 - yTickTextW, plotY + plotH / 2, fs.axisLabel * 1.3);
   }
 
   // 데이터 포인트
