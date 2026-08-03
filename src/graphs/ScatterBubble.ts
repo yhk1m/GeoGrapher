@@ -512,11 +512,20 @@ function drawBubbleLegend(
   const maxSize = Math.max(...sizes);
   if (maxSize === 0) return 0;
 
-  const steps = [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
+  // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다)
+  const given = data.bubbleLegendItems?.filter((it) => it.size > 0) ?? [];
+  const steps = given.length > 0
+    ? given.map((it) => it.size)
+    : [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
   const uniqueSteps = [...new Set(steps)].sort((a, b) => b - a);
+  const labelOf = (size: number) =>
+    given.find((it) => it.size === size)?.label ?? String(size);
 
   const maxR = data.bubbleScale * 1.2;
-  const labelW = 50;
+  ctx.save();
+  ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
+  const labelW = Math.max(50, ...uniqueSteps.map((v) => ctx.measureText(labelOf(v)).width));
+  ctx.restore();
   const pad = 14;
   const boxW = maxR * 2 + labelW + pad * 2 + 20;
   const boxH = maxR * 2 + pad * 2 + 10;
@@ -568,7 +577,7 @@ function drawBubbleLegend(
     ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(size), circleX + maxR + 16, lineY);
+    ctx.fillText(labelOf(size), circleX + maxR + 16, lineY);
   }
 
   return boxH;

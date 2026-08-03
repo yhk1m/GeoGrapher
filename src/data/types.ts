@@ -287,6 +287,12 @@ export interface ScatterGraphData {
     title: string;
     items: { label: string; fill: string }[];
   };
+  /**
+   * 버블 크기 범례에 쓸 항목을 직접 지정한다.
+   * 미지정이면 최댓값에서 자동으로 세 단계를 잡고 숫자를 그대로 쓴다 —
+   * 인구처럼 자릿수가 큰 값은 그대로 두면 읽을 수 없으므로 여기서 정해 준다.
+   */
+  bubbleLegendItems?: { size: number; label: string }[];
   // 편차 모드 전용
   quadrantLabels: [string, string, string, string]; // 1사분면(우상), 2(좌상), 3(좌하), 4(우하)
 }
