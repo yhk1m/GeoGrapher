@@ -103,15 +103,19 @@ export function renderAbsBarGraph(
 
     const catArea = plotW / n;
     const valToY = (v: number) => plotY + plotH - ((v - axis.min) / (axis.max - axis.min)) * plotH;
+    // 막대가 어디서 시작하는가 — 기본은 축 바닥, zeroBaseline 이면 0
+    const baseValue = data.zeroBaseline ? 0 : axis.min;
+    const baseY = valToY(baseValue);
     if (data.stacked) {
       const barW = Math.min(catArea * 0.5, 80);
       for (let c = 0; c < n; c++) {
         const cx = plotX + catArea * c + catArea / 2;
+        // 누적 막대는 원래부터 0에서 쌓는다 — zeroBaseline 과 무관하다
         let cumVal = 0;
         for (let s = 0; s < sCount; s++) {
           const val = data.categories[c].values[s] || 0;
-          const y = valToY(cumVal + val);
-          const barH = valToY(cumVal) - y;
+          const y = Math.min(valToY(cumVal + val), valToY(cumVal));
+          const barH = Math.abs(valToY(cumVal) - valToY(cumVal + val));
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
           ctx.fillRect(cx - barW / 2, y, barW, barH);
@@ -137,8 +141,8 @@ export function renderAbsBarGraph(
         const groupStart = plotX + catArea * c + (catArea - groupW) / 2;
         for (let s = 0; s < sCount; s++) {
           const val = data.categories[c].values[s] || 0;
-          const by = valToY(val);
-          const barH = valToY(axis.min) - by;
+          const by = Math.min(valToY(val), baseY);
+          const barH = Math.abs(valToY(val) - baseY);
           const bx = groupStart + barW * s;
 
           ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
@@ -159,14 +163,27 @@ export function renderAbsBarGraph(
     }
     ctx.restore(); // 클리핑 해제
 
-    // X축 라벨 (클리핑 밖에서)
+    // 0 기준선 — 막대 위에 그어야 가려지지 않는다
+    if (data.zeroBaseline && baseY > plotY && baseY < plotY + plotH) {
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(plotX, baseY);
+      ctx.lineTo(plotX + plotW, baseY);
+      ctx.stroke();
+    }
+
+    // X축 라벨 (클리핑 밖에서).
+    // 편차 그래프는 라벨이 플롯 아래가 아니라 0선 바로 아래에 붙는다.
+    const labelY = data.zeroBaseline ? baseY + 6 : plotY + plotH + 12;
     for (let c = 0; c < n; c++) {
       const cx = plotX + catArea * c + catArea / 2;
       ctx.fillStyle = '#000';
       ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(data.categories[c].label, cx, plotY + plotH + 12);
+      ctx.fillText(data.categories[c].label, cx, labelY);
     }
   } else {
     // 가로 — 사각 테두리
