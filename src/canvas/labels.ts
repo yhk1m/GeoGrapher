@@ -170,3 +170,29 @@ export class LabelPlacer {
     ctx.fillText(label, far.x, far.y);
   }
 }
+
+// ── 눈금 라벨 겹침 방지 ─────────────────────────────────────
+
+/**
+ * 눈금 라벨을 몇 개 걸러 그릴지 정한다.
+ *
+ * 축 범위가 좁거나 칸이 많으면 숫자가 서로 붙어 읽을 수 없게 된다.
+ * 라벨 크기와 눈금 간격을 재서, 겹치지 않는 최소 간격(stride)을 돌려준다.
+ * 1이면 전부 그려도 된다는 뜻이다.
+ *
+ * 눈금 표시(작은 선)는 그대로 두고 숫자만 솎아낸다 — 축의 눈금 간격 자체는
+ * 그래프가 읽히는 근거이므로 없애면 안 된다.
+ *
+ * @param spacing 이웃한 눈금 사이의 픽셀 거리
+ * @param extent  라벨이 축 방향으로 차지하는 크기 (가로축이면 글자 너비, 세로축이면 줄 높이)
+ */
+export function labelStride(spacing: number, extent: number, minGap = 6): number {
+  if (!Number.isFinite(spacing) || spacing <= 0) return 1;
+  return Math.max(1, Math.ceil((extent + minGap) / spacing));
+}
+
+/** 눈금 라벨들 중 가장 넓은 글자 너비 */
+export function widestLabel(ctx: CanvasRenderingContext2D, labels: string[]): number {
+  if (labels.length === 0) return 0;
+  return Math.max(...labels.map((l) => ctx.measureText(l).width));
+}

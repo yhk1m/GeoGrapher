@@ -1,7 +1,7 @@
 // © 2026 김용현
 import { type ScatterGraphData, type GraphOptions } from '../data/types';
 import { type Padding, clearCanvas, getFont, autoRange, fillTextMultiline } from '../canvas/renderer';
-import { drawTitle, drawSourceAndFootnote, LabelPlacer, type LabelBox } from '../canvas/labels';
+import { drawTitle, drawSourceAndFootnote, LabelPlacer, labelStride, widestLabel, type LabelBox } from '../canvas/labels';
 
 export function renderScatterGraph(
   ctx: CanvasRenderingContext2D,
@@ -99,28 +99,38 @@ function renderNormal(
   ctx.font = getFont(fs.tick, font, cf, 'bold');
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  for (let v = xMin; v <= xMax + xStep * 0.01; v += xStep) {
+  // 숫자가 서로 붙으면 몇 개 걸러 그린다 (눈금 표시는 그대로 둔다)
+  const xTicks: number[] = [];
+  for (let v = xMin; v <= xMax + xStep * 0.01; v += xStep) xTicks.push(v);
+  const xStride = labelStride(
+    plotW / Math.max(1, xTicks.length - 1),
+    widestLabel(ctx, xTicks.map(formatTick)),
+  );
+  xTicks.forEach((v, i) => {
     const x = toCanvasX(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, plotY + plotH);
     ctx.lineTo(x, plotY + plotH + 6);
     ctx.stroke();
-    ctx.fillText(formatTick(v), x, plotY + plotH + 10);
-  }
+    if (i % xStride === 0) ctx.fillText(formatTick(v), x, plotY + plotH + 10);
+  });
 
   // Y축 눈금
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  for (let v = yMin; v <= yMax + yStep * 0.01; v += yStep) {
+  const yTicks: number[] = [];
+  for (let v = yMin; v <= yMax + yStep * 0.01; v += yStep) yTicks.push(v);
+  const yStride = labelStride(plotH / Math.max(1, yTicks.length - 1), fs.tick * 1.1);
+  yTicks.forEach((v, i) => {
     const y = toCanvasY(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(plotX - 6, y);
     ctx.lineTo(plotX, y);
     ctx.stroke();
-    ctx.fillText(formatTick(v), plotX - 10, y);
-  }
+    if (i % yStride === 0) ctx.fillText(formatTick(v), plotX - 10, y);
+  });
 
   // 축 라벨
   ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
@@ -275,30 +285,39 @@ function renderDeviation(
   // X축 눈금
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  for (let v = -xLimit; v <= xLimit + xStep * 0.01; v += xStep) {
-    if (Math.abs(v) < xStep * 0.01) continue;
+  const devXTicks: number[] = [];
+  for (let v = -xLimit; v <= xLimit + xStep * 0.01; v += xStep) devXTicks.push(v);
+  const devXStride = labelStride(
+    plotW / Math.max(1, devXTicks.length - 1),
+    widestLabel(ctx, devXTicks.map(formatTick)),
+  );
+  devXTicks.forEach((v, i) => {
+    if (Math.abs(v) < xStep * 0.01) return;
     const x = toCanvasX(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, xTickBase);
     ctx.lineTo(x, xTickBase + 6);
     ctx.stroke();
-    ctx.fillText(formatTick(v), x, xTickBase + 10);
-  }
+    if (i % devXStride === 0) ctx.fillText(formatTick(v), x, xTickBase + 10);
+  });
 
   // Y축 눈금
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  for (let v = -yLimit; v <= yLimit + yStep * 0.01; v += yStep) {
-    if (Math.abs(v) < yStep * 0.01) continue;
+  const devYTicks: number[] = [];
+  for (let v = -yLimit; v <= yLimit + yStep * 0.01; v += yStep) devYTicks.push(v);
+  const devYStride = labelStride(plotH / Math.max(1, devYTicks.length - 1), fs.tick * 1.1);
+  devYTicks.forEach((v, i) => {
+    if (Math.abs(v) < yStep * 0.01) return;
     const y = toCanvasY(v);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(yTickBase - 6, y);
     ctx.lineTo(yTickBase, y);
     ctx.stroke();
-    ctx.fillText(formatTick(v), yTickBase - 10, y);
-  }
+    if (i % devYStride === 0) ctx.fillText(formatTick(v), yTickBase - 10, y);
+  });
 
   // 축 라벨
   ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
@@ -336,7 +355,8 @@ function renderDeviation(
   if (data.boxedAxisLabels) {
     // 시험지 관습 — y 이름은 그래프 위, x 이름은 그래프 오른쪽에 상자로 둔다
     // y 이름은 맨 위에 둔다 — 그 아래 자리는 y 단위가 쓴다.
-    drawBoxedLabel(ctx, data.yLabel, plotX + 4, 10, fs.axisLabel, 'below');
+    // y 이름은 세로축(0선)에 가운데를 맞춘다
+    drawBoxedLabel(ctx, data.yLabel, originX, 10, fs.axisLabel, 'below');
     // x 이름은 x 단위 오른쪽에 둔다 — 둘 다 축 오른쪽 끝, 같은 줄이라 겹칠 수 있다.
     const xUnitW = data.xUnit && data.ticksOnAxis ? ctx.measureText(data.xUnit).width + 14 : 0;
     drawBoxedLabel(ctx, data.xLabel, plotX + plotW + 16 + xUnitW, plotY + plotH / 2, fs.axisLabel, 'right');
@@ -550,7 +570,7 @@ function drawBubbleLegend(
 /**
  * 축 이름을 얇은 상자에 넣어 그린다 (시험지 편차 그래프 관습).
  *
- * place 가 'below' 면 (x, y)가 상자의 왼쪽 위,
+ * place 가 'below' 면 (x, y)가 상자의 **위쪽 가운데**,
  * 'right' 면 (x, y)가 상자의 왼쪽 세로 중앙이다.
  * 줄바꿈 구분자는 fillTextMultiline 과 같은 리터럴 
  이다.
@@ -574,19 +594,21 @@ function drawBoxedLabel(
   const textW = Math.max(...lines.map((l) => ctx.measureText(l).width));
   const boxW = textW + padX * 2;
   const boxH = lines.length * lineH + padY * 2;
+  // 'below' 는 x 를 가로 중앙으로 본다 — 축에 맞춰 가운데 정렬하기 위해서다
+  const boxX = place === 'below' ? x - boxW / 2 : x;
   const boxY = place === 'below' ? y : y - boxH / 2;
 
   ctx.fillStyle = '#fff';
-  ctx.fillRect(x, boxY, boxW, boxH);
+  ctx.fillRect(boxX, boxY, boxW, boxH);
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 1.2;
-  ctx.strokeRect(x, boxY, boxW, boxH);
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
 
   ctx.fillStyle = '#000';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], x + boxW / 2, boxY + padY + i * lineH);
+    ctx.fillText(lines[i], boxX + boxW / 2, boxY + padY + i * lineH);
   }
   ctx.restore();
 }

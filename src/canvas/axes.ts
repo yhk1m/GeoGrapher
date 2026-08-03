@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type Padding, getFont } from './renderer';
+import { labelStride, widestLabel } from './labels';
 
 interface AxisOptions {
   ctx: CanvasRenderingContext2D;
@@ -64,6 +65,8 @@ export function drawYAxis({
     ticks.push(max);
   }
 
+  const stride = labelStride(plot.h / Math.max(1, ticks.length - 1), tickFontSize * 1.1);
+
   for (let i = 0; i < ticks.length; i++) {
     const val = ticks[i];
     const y = plot.y + plot.h - ((val - min) / (max - min)) * plot.h;
@@ -93,9 +96,11 @@ export function drawYAxis({
       ctx.restore();
     }
 
-    // 숫자
-    const tx = side === 'left' ? x - 12 : x + 12;
-    ctx.fillText(formatTick(val), tx, y);
+    // 숫자 — 서로 붙으면 몇 개 걸러 그린다 (눈금선은 그대로)
+    if (i % stride === 0) {
+      const tx = side === 'left' ? x - 12 : x + 12;
+      ctx.fillText(formatTick(val), tx, y);
+    }
   }
 
   // 축 라벨 (축 상단, 숫자 열에 맞춤)
@@ -131,6 +136,9 @@ export function drawXAxis({
 
   const showIndices = indices ?? labels.map((_, i) => i);
   const slotWidth = plot.w / labels.length;
+  // 범주 이름이 서로 붙으면 몇 개 걸러 그린다 (눈금선은 그대로)
+  const stride = labelStride(slotWidth, widestLabel(ctx, labels));
+  let shown = 0;
 
   for (const i of showIndices) {
     if (i < 0 || i >= labels.length) continue;
@@ -144,7 +152,8 @@ export function drawXAxis({
     ctx.stroke();
 
     // 라벨
-    ctx.fillText(labels[i], cx, y + 12);
+    if (shown % stride === 0) ctx.fillText(labels[i], cx, y + 12);
+    shown++;
   }
 }
 

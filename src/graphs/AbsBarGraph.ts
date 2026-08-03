@@ -2,7 +2,7 @@
 import { type AbsBarGraphData, type GraphOptions } from '../data/types';
 import { type Padding, clearCanvas, autoRange, getFont } from '../canvas/renderer';
 import { drawYAxis } from '../canvas/axes';
-import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
+import { drawTitle, drawSourceAndFootnote, labelStride, widestLabel } from '../canvas/labels';
 import { drawLegend, measureLegendWidth } from '../canvas/legend';
 import { getStackedFill, isLightFill } from '../canvas/patterns';
 
@@ -177,12 +177,15 @@ export function renderAbsBarGraph(
     // X축 라벨 (클리핑 밖에서).
     // 편차 그래프는 라벨이 플롯 아래가 아니라 0선 바로 아래에 붙는다.
     const labelY = data.categoryLabelAtBaseline ? baseY + 6 : plotY + plotH + 12;
+    ctx.fillStyle = '#000';
+    ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // 범주 이름이 서로 붙으면 몇 개 걸러 그린다
+    const catStride = labelStride(catArea, widestLabel(ctx, data.categories.map((c) => c.label)));
     for (let c = 0; c < n; c++) {
+      if (c % catStride !== 0) continue;
       const cx = plotX + catArea * c + catArea / 2;
-      ctx.fillStyle = '#000';
-      ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
       ctx.fillText(data.categories[c].label, cx, labelY);
     }
   } else {
