@@ -321,8 +321,9 @@ export function renderAbsBarGraph(
   if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
-      fillStyle: getStackedFill(ctx, i),
-      bordered: isLightFill(i),
+      // 막대와 같은 채움을 쓴다 — seriesFills 를 준 경우 범례도 그 색이어야 한다
+      fillStyle: data.seriesFills?.[i] ?? getStackedFill(ctx, i),
+      bordered: data.seriesFills?.[i] ? isLightColor(data.seriesFills[i]) : isLightFill(i),
       label,
     }));
     drawLegend({
@@ -339,4 +340,16 @@ export function renderAbsBarGraph(
 function formatTick(val: number): string {
   if (Number.isInteger(val)) return val.toString();
   return val.toFixed(1);
+}
+
+/** 채움색이 밝아서 흰 배경과 구분이 안 되는가 (범례 아이콘 테두리 여부) */
+function isLightColor(color: string): boolean {
+  const hex = color.replace('#', '');
+  if (hex.length !== 3 && hex.length !== 6) return false;
+  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some(Number.isNaN)) return false;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 180;
 }
