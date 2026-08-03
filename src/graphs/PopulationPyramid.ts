@@ -132,36 +132,61 @@ export function renderPyramidGraph(
     const maleW = (displayAges[i].male / maxVal) * halfW;
     const femaleW = (displayAges[i].female / maxVal) * halfW;
 
-    // 남성 (좌측) — 진한 회색
-    ctx.fillStyle = '#666';
+    // 남성 (좌측) — 기본은 진한 회색, sexFills 를 주면 그 색
+    ctx.fillStyle = data.sexFills?.[0] ?? '#666';
     ctx.fillRect(centerX - maleW, y, maleW, actualBarH);
-    ctx.strokeStyle = '#444';
+    ctx.strokeStyle = data.sexFills ? '#000' : '#444';
     ctx.lineWidth = 0.5;
     ctx.strokeRect(centerX - maleW, y, maleW, actualBarH);
 
-    // 여성 (우측) — 연한 회색
-    ctx.fillStyle = '#BBB';
+    // 여성 (우측) — 기본은 연한 회색
+    ctx.fillStyle = data.sexFills?.[1] ?? '#BBB';
     ctx.fillRect(centerX, y, femaleW, actualBarH);
-    ctx.strokeStyle = '#888';
+    ctx.strokeStyle = data.sexFills ? '#000' : '#888';
     ctx.lineWidth = 0.5;
     ctx.strokeRect(centerX, y, femaleW, actualBarH);
   }
 
-  // 연령 라벨
+  // 연령 축
   ctx.fillStyle = '#000';
-  ctx.font = getFont(options.fontSize.tick * 0.75, font, customFont, 'bold');
   ctx.textBaseline = 'middle';
-  for (let i = 0; i < n; i++) {
-    const y = plotY + plotH - (i + 1) * barH + barH / 2;
-    if (side === 'center') {
-      ctx.textAlign = 'center';
-      ctx.fillText(AGE_GROUPS[i], centerX, y);
-    } else if (side === 'left') {
-      ctx.textAlign = 'right';
-      ctx.fillText(AGE_GROUPS[i], plotX - 8, y);
-    } else {
-      ctx.textAlign = 'left';
-      ctx.fillText(AGE_GROUPS[i], plotX + plotW + 8, y);
+
+  if (data.numericAgeAxis) {
+    // 시험지 방식 — 연령대 이름 대신 나이 수치 눈금을 왼쪽에 둔다.
+    // 구간이 5세 단위라 i 번째 막대의 아래 경계가 i*5 세다.
+    ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
+    ctx.textAlign = 'right';
+    const ageStep = 20;
+    const topAge = n * 5; // 17구간 × 5세 = 85
+    for (let age = 0; age <= topAge; age += ageStep) {
+      const y = plotY + plotH - (age / topAge) * plotH;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#000';
+      ctx.beginPath();
+      ctx.moveTo(plotX - 6, y);
+      ctx.lineTo(plotX, y);
+      ctx.stroke();
+      ctx.fillText(String(age), plotX - 10, y);
+    }
+    if (data.ageUnit) {
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(data.ageUnit, plotX + 4, plotY - 8);
+      ctx.textBaseline = 'middle';
+    }
+  } else {
+    ctx.font = getFont(options.fontSize.tick * 0.75, font, customFont, 'bold');
+    for (let i = 0; i < n; i++) {
+      const y = plotY + plotH - (i + 1) * barH + barH / 2;
+      if (side === 'center') {
+        ctx.textAlign = 'center';
+        ctx.fillText(AGE_GROUPS[i], centerX, y);
+      } else if (side === 'left') {
+        ctx.textAlign = 'right';
+        ctx.fillText(AGE_GROUPS[i], plotX - 8, y);
+      } else {
+        ctx.textAlign = 'left';
+        ctx.fillText(AGE_GROUPS[i], plotX + plotW + 8, y);
+      }
     }
   }
 

@@ -205,6 +205,19 @@ export interface PyramidGraphData {
   axisLabel: string;
   range: { max: number; auto: boolean };
   ageLabelSide: AgeLabelSide;
+  /**
+   * 세로축을 연령대 이름(0-4, 5-9…) 대신 **나이 수치 눈금**으로 그린다.
+   * 시험지 피라미드가 이 방식이다 — 왼쪽에 (세) 0/20/40/60/80.
+   * 미지정이면 기존대로 연령대 이름을 쓴다.
+   */
+  numericAgeAxis?: boolean;
+  /** 나이 축 단위 표기 (numericAgeAxis 일 때만). 예: '(세)' */
+  ageUnit?: string;
+  /**
+   * 남·여 막대 채움색 [남, 여]. 미지정이면 기존 색(진회색/연회색).
+   * 시험지는 둘 다 같은 연회색에 검정 테두리다.
+   */
+  sexFills?: [string, string];
 }
 
 export function createDefaultPyramidData(): PyramidGraphData {
