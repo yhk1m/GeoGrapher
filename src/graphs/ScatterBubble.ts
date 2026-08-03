@@ -317,7 +317,7 @@ function renderDeviation(
     ctx.textBaseline = 'top';
     ctx.fillText(
       data.xUnit,
-      plotX + plotW + (data.ticksOnAxis ? 8 : 10),
+      plotX + plotW + (data.ticksOnAxis ? 20 : 10),
       data.ticksOnAxis ? originY + 10 : plotY + plotH + 40,
     );
   }
