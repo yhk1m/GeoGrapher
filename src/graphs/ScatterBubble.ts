@@ -308,18 +308,27 @@ function renderDeviation(
     ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
   }
 
-  // X축 단위 (우측 끝, 라벨과 같은 높이)
+  // 축 단위.
+  // 눈금이 십자축에 붙어 있으면 단위도 그 축 끝에, 눈금 숫자와 같은 줄·열에 둔다.
+  // (축선 위가 아니라 숫자와 나란히 놓여야 읽힌다.)
   if (data.xUnit) {
-    ctx.textAlign = 'right';
+    ctx.textAlign = data.ticksOnAxis ? 'left' : 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText(data.xUnit, plotX + plotW + 10, plotY + plotH + 40);
+    ctx.fillText(
+      data.xUnit,
+      plotX + plotW + (data.ticksOnAxis ? 8 : 10),
+      data.ticksOnAxis ? originY + 10 : plotY + plotH + 40,
+    );
   }
 
-  // Y축 단위 (상단 끝)
   if (data.yUnit) {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(data.yUnit, plotX - 10, plotY - 16);
+    ctx.fillText(
+      data.yUnit,
+      data.ticksOnAxis ? originX - 10 : plotX - 10,
+      data.ticksOnAxis ? plotY - 6 : plotY - 16,
+    );
   }
 
   if (data.boxedAxisLabels) {
