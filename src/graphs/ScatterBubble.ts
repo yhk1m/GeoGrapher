@@ -176,7 +176,8 @@ function renderDeviation(
 
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: 80,
+    // 상자 축이름은 플롯 오른쪽 바깥에 놓이므로 그때만 자리를 더 준다
+    right: data.boxedAxisLabels ? 170 : 80,
     bottom: (() => {
       let b = 90;
       if (options.source) b += 30;
@@ -523,7 +524,8 @@ function drawBoxedLabel(
   place: 'below' | 'right'
 ) {
   if (!text) return;
-  const lines = text.split('\n');
+  // fillTextMultiline 과 같은 규약 — 실제 줄바꿈이 아니라 리터럴 역슬래시+n 으로 나눈다
+  const lines = text.split('\\n');
   const lineH = fontSize * 1.25;
   const padX = 8;
   const padY = 6;
