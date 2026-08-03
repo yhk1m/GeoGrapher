@@ -233,16 +233,18 @@ function renderDeviation(
   }
   ctx.restore();
 
-  // 외곽 축선
+  // 외곽 축선 — 시험지 편차 그래프는 테두리 없이 교차하는 두 축만 둔다
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(plotX, plotY);
-  ctx.lineTo(plotX, plotY + plotH);
-  ctx.lineTo(plotX + plotW, plotY + plotH);
-  ctx.lineTo(plotX + plotW, plotY);
-  ctx.closePath();
-  ctx.stroke();
+  if (data.showFrame !== false) {
+    ctx.beginPath();
+    ctx.moveTo(plotX, plotY);
+    ctx.lineTo(plotX, plotY + plotH);
+    ctx.lineTo(plotX + plotW, plotY + plotH);
+    ctx.lineTo(plotX + plotW, plotY);
+    ctx.closePath();
+    ctx.stroke();
+  }
 
   // 십자 기준선 (0,0)
   ctx.strokeStyle = '#000';
@@ -294,10 +296,12 @@ function renderDeviation(
   // 축 라벨
   ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
 
-  // X축 라벨 (하단 중앙)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
+  // X축 라벨 (하단 중앙). 상자 방식이면 아래에서 따로 그린다.
+  if (!data.boxedAxisLabels) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
+  }
 
   // X축 단위 (우측 끝, 라벨과 같은 높이)
   if (data.xUnit) {
@@ -313,10 +317,16 @@ function renderDeviation(
     ctx.fillText(data.yUnit, plotX - 10, plotY - 16);
   }
 
-  // Y축 라벨 (Y축 중간, 줄바꿈 지원)
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
+  if (data.boxedAxisLabels) {
+    // 시험지 관습 — y 이름은 그래프 위, x 이름은 그래프 오른쪽에 상자로 둔다
+    drawBoxedLabel(ctx, data.yLabel, plotX + 4, plotY - 48, fs.axisLabel, 'below');
+    drawBoxedLabel(ctx, data.xLabel, plotX + plotW + 16, plotY + plotH / 2, fs.axisLabel, 'right');
+  } else {
+    // Y축 라벨 (Y축 중간, 줄바꿈 지원)
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    fillTextMultiline(ctx, data.yLabel, plotX - 55, plotY + plotH / 2, fs.axisLabel * 1.3);
+  }
 
   // 데이터 포인트
   drawPoints(ctx, data, toCanvasX, toCanvasY, fs, font, cf, options.showDataLabels);
@@ -494,4 +504,47 @@ function drawBubbleLegend(
     ctx.textBaseline = 'middle';
     ctx.fillText(String(size), circleX + maxR + 16, lineY);
   }
+}
+
+/**
+ * 축 이름을 얇은 상자에 넣어 그린다 (시험지 편차 그래프 관습).
+ *
+ * place 가 'below' 면 (x, y)가 상자의 왼쪽 위,
+ * 'right' 면 (x, y)가 상자의 왼쪽 세로 중앙이다.
+ * 줄바꿈 구분자는 fillTextMultiline 과 같은 리터럴 
+ 이다.
+ */
+function drawBoxedLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  fontSize: number,
+  place: 'below' | 'right'
+) {
+  if (!text) return;
+  const lines = text.split('\n');
+  const lineH = fontSize * 1.25;
+  const padX = 8;
+  const padY = 6;
+
+  ctx.save();
+  const textW = Math.max(...lines.map((l) => ctx.measureText(l).width));
+  const boxW = textW + padX * 2;
+  const boxH = lines.length * lineH + padY * 2;
+  const boxY = place === 'below' ? y : y - boxH / 2;
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(x, boxY, boxW, boxH);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(x, boxY, boxW, boxH);
+
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x + boxW / 2, boxY + padY + i * lineH);
+  }
+  ctx.restore();
 }
