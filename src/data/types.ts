@@ -240,6 +240,11 @@ export interface ScatterPoint {
   y: number;
   size: number; // 버블 크기 (0이면 기본 점)
   label: string;
+  /**
+   * 이 점(버블)의 채움색. 미지정이면 기존 회색을 쓴다.
+   * 크기와 별개인 두 번째 값(예: 1인당 GDP 구간)을 색으로 나타낼 때 쓴다.
+   */
+  fill?: string;
 }
 
 export type BubbleLegendPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
@@ -274,6 +279,14 @@ export interface ScatterGraphData {
    * 편차 모드에서만 쓴다.
    */
   ticksOnAxis?: boolean;
+  /**
+   * 채움색이 무엇을 뜻하는지 알려주는 범례. 버블 크기 범례 아래에 놓인다.
+   * 미지정이면 그리지 않는다.
+   */
+  fillLegend?: {
+    title: string;
+    items: { label: string; fill: string }[];
+  };
   // 편차 모드 전용
   quadrantLabels: [string, string, string, string]; // 1사분면(우상), 2(좌상), 3(좌하), 4(우하)
 }

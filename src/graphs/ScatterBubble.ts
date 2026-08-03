@@ -167,7 +167,8 @@ function renderNormal(
 
   // 버블 크기 범례
   if (data.showBubble && data.points.length > 0) {
-    drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
+    const usedH = drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
+    drawFillLegend(ctx, data, plotX, plotY, plotW, plotH, usedH, fs, font, cf);
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
@@ -419,8 +420,8 @@ function drawPoints(
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
-      // 버블 원
-      ctx.fillStyle = 'rgba(80,80,80,0.3)';
+      // 버블 원 — 점별 채움색을 주면 그 색으로 (크기와 다른 값을 색으로 나타낼 때)
+      ctx.fillStyle = pt.fill ?? 'rgba(80,80,80,0.3)';
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
@@ -493,6 +494,7 @@ function formatTick(v: number): string {
 }
 
 /** 버블 크기 범례: 겹친 원 + 박스 */
+/** 그린 범례 상자의 높이를 돌려준다 (아래에 다른 범례를 붙일 때 쓴다) */
 function drawBubbleLegend(
   ctx: CanvasRenderingContext2D,
   data: ScatterGraphData,
@@ -503,12 +505,12 @@ function drawBubbleLegend(
   fs: GraphOptions['fontSize'],
   font: GraphOptions['fontFamily'],
   cf: string,
-) {
+): number {
   const sizes = data.points.map((p) => p.size).filter((s) => s > 0);
-  if (sizes.length === 0) return;
+  if (sizes.length === 0) return 0;
 
   const maxSize = Math.max(...sizes);
-  if (maxSize === 0) return;
+  if (maxSize === 0) return 0;
 
   const steps = [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
   const uniqueSteps = [...new Set(steps)].sort((a, b) => b - a);
@@ -568,6 +570,8 @@ function drawBubbleLegend(
     ctx.textBaseline = 'middle';
     ctx.fillText(String(size), circleX + maxR + 16, lineY);
   }
+
+  return boxH;
 }
 
 /**
@@ -613,5 +617,82 @@ function drawBoxedLabel(
   for (let i = 0; i < lines.length; i++) {
     ctx.fillText(lines[i], boxX + boxW / 2, boxY + padY + i * lineH);
   }
+  ctx.restore();
+}
+
+/**
+ * 채움색이 무엇을 뜻하는지 알려주는 범례.
+ * 버블 크기 범례와 같은 모서리에, 그 아래에 붙인다.
+ *
+ * @param offsetH 위에 이미 그려진 범례의 높이 (겹치지 않게 그만큼 비켜 놓는다)
+ */
+function drawFillLegend(
+  ctx: CanvasRenderingContext2D,
+  data: ScatterGraphData,
+  plotX: number,
+  plotY: number,
+  plotW: number,
+  plotH: number,
+  offsetH: number,
+  fs: GraphOptions['fontSize'],
+  font: GraphOptions['fontFamily'],
+  cf: string,
+) {
+  const legend = data.fillLegend;
+  if (!legend || legend.items.length === 0) return;
+
+  const fontSize = fs.dataLabel * 0.8;
+  ctx.save();
+  ctx.font = getFont(fontSize, font, cf, 'bold');
+
+  const rowH = fontSize * 1.5;
+  const swatch = fontSize * 0.95;
+  const pad = 8;
+  const titleH = legend.title ? rowH : 0;
+  const textW = Math.max(
+    legend.title ? ctx.measureText(legend.title).width : 0,
+    ...legend.items.map((it) => swatch + 6 + ctx.measureText(it.label).width),
+  );
+  const boxW = textW + pad * 2;
+  const boxH = titleH + legend.items.length * rowH + pad * 2;
+
+  const pos = data.bubbleLegendPosition || 'bottom-right';
+  const gap = offsetH > 0 ? offsetH + 6 : 0;
+  let boxX: number, boxY: number;
+  if (pos === 'top-left') { boxX = plotX + 10; boxY = plotY + 10 + gap; }
+  else if (pos === 'top-right') { boxX = plotX + plotW - boxW - 10; boxY = plotY + 10 + gap; }
+  else if (pos === 'bottom-left') { boxX = plotX + 10; boxY = plotY + plotH - boxH - 10 - gap; }
+  else { boxX = plotX + plotW - boxW - 10; boxY = plotY + plotH - boxH - 10 - gap; }
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(boxX, boxY, boxW, boxH);
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+  let y = boxY + pad;
+  if (legend.title) {
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(legend.title, boxX + boxW / 2, y);
+    y += rowH;
+  }
+
+  for (const it of legend.items) {
+    ctx.fillStyle = it.fill;
+    ctx.fillRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
+
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(it.label, boxX + pad + swatch + 6, y + rowH / 2);
+    y += rowH;
+  }
+
   ctx.restore();
 }
