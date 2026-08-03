@@ -3,6 +3,7 @@ import { type PyramidGraphData, type GraphOptions, AGE_GROUPS } from '../data/ty
 import { type Padding, clearCanvas, getFont, niceStep } from '../canvas/renderer';
 import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
 import { drawLegend, measureLegendWidth } from '../canvas/legend';
+import { labelStride, widestLabel } from '../canvas/labels';
 
 export function renderPyramidGraph(
   ctx: CanvasRenderingContext2D,
@@ -199,9 +200,21 @@ export function renderPyramidGraph(
     return Number.isInteger(r) ? r.toString() : r.toFixed(1);
   };
 
+  // 좌우 대칭이라 숫자가 두 배로 들어간다 — 붙으면 몇 개 걸러 그린다
+  const xTickValues: number[] = [];
   for (let v = 0; v <= maxVal + tickStep * 0.001; v += tickStep) {
     const rv = Math.round(v * 1e10) / 1e10;
     if (rv > maxVal) break;
+    xTickValues.push(rv);
+  }
+  const xStride = labelStride(
+    halfW / Math.max(1, xTickValues.length - 1),
+    widestLabel(ctx, xTickValues.map(fmtTick)),
+  );
+
+  for (let ti = 0; ti < xTickValues.length; ti++) {
+    const rv = xTickValues[ti];
+    const showNumber = ti % xStride === 0;
     const offset = (rv / maxVal) * halfW;
 
     // 좌측
@@ -212,8 +225,10 @@ export function renderPyramidGraph(
     ctx.moveTo(lx, plotY + plotH);
     ctx.lineTo(lx, plotY + plotH + 5);
     ctx.stroke();
-    ctx.textAlign = 'center';
-    ctx.fillText(fmtTick(rv), lx, plotY + plotH + 10);
+    if (showNumber) {
+      ctx.textAlign = 'center';
+      ctx.fillText(fmtTick(rv), lx, plotY + plotH + 10);
+    }
 
     // 우측
     const rx = centerX + offset;
@@ -223,7 +238,7 @@ export function renderPyramidGraph(
     ctx.moveTo(rx, plotY + plotH);
     ctx.lineTo(rx, plotY + plotH + 5);
     ctx.stroke();
-    if (rv > 0) {
+    if (rv > 0 && showNumber) {
       ctx.textAlign = 'center';
       ctx.fillText(fmtTick(rv), rx, plotY + plotH + 10);
     }
