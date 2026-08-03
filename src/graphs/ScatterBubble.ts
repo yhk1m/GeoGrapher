@@ -58,8 +58,8 @@ function renderNormal(
   const xMax = data.xRange.auto ? xAuto.max : data.xRange.max;
   const yMin = data.yRange.auto ? yAuto.min : data.yRange.min;
   const yMax = data.yRange.auto ? yAuto.max : data.yRange.max;
-  const xStep = data.xRange.auto ? xAuto.step : (xMax - xMin) / 5;
-  const yStep = data.yRange.auto ? yAuto.step : (yMax - yMin) / 5;
+  const xStep = data.xRange.step ?? (data.xRange.auto ? xAuto.step : (xMax - xMin) / 5);
+  const yStep = data.yRange.step ?? (data.yRange.auto ? yAuto.step : (yMax - yMin) / 5);
 
   const toCanvasX = (v: number) => plotX + ((v - xMin) / (xMax - xMin)) * plotW;
   const toCanvasY = (v: number) => plotY + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
@@ -201,8 +201,8 @@ function renderDeviation(
   const ySymAuto = symmetricRange(yAbsMax);
   const xLimit = data.xRange.auto ? xSymAuto.limit : Math.max(Math.abs(data.xRange.min), Math.abs(data.xRange.max));
   const yLimit = data.yRange.auto ? ySymAuto.limit : Math.max(Math.abs(data.yRange.min), Math.abs(data.yRange.max));
-  const xStep = data.xRange.auto ? xSymAuto.step : xLimit / 4;
-  const yStep = data.yRange.auto ? ySymAuto.step : yLimit / 4;
+  const xStep = data.xRange.step ?? (data.xRange.auto ? xSymAuto.step : xLimit / 4);
+  const yStep = data.yRange.step ?? (data.yRange.auto ? ySymAuto.step : yLimit / 4);
 
   const toCanvasX = (v: number) => plotX + ((v + xLimit) / (2 * xLimit)) * plotW;
   const toCanvasY = (v: number) => plotY + plotH - ((v + yLimit) / (2 * yLimit)) * plotH;
