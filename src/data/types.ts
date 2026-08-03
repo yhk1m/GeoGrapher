@@ -244,6 +244,17 @@ export interface ScatterGraphData {
   yRange: { min: number; max: number; auto: boolean; step?: number };
   showBubble: boolean;
   bubbleScale: number; // 버블 최대 반지름 (px)
+  /**
+   * 바깥 사각 테두리를 그린다. 미지정이면 그린다(기존 동작).
+   * 시험지 편차 그래프는 테두리 없이 교차하는 두 축만 둔다.
+   */
+  showFrame?: boolean;
+  /**
+   * 축 이름을 상자에 넣어 y는 그래프 위, x는 그래프 오른쪽에 세운다.
+   * 시험지 편차 그래프 관습이다. 미지정이면 기존대로 축 옆에 쓴다.
+   * 편차 모드에서만 쓴다.
+   */
+  boxedAxisLabels?: boolean;
   // 편차 모드 전용
   quadrantLabels: [string, string, string, string]; // 1사분면(우상), 2(좌상), 3(좌하), 4(우하)
 }
