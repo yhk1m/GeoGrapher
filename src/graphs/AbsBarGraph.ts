@@ -3,7 +3,7 @@ import { type AbsBarGraphData, type GraphOptions } from '../data/types';
 import { type Padding, clearCanvas, autoRange, getFont } from '../canvas/renderer';
 import { drawYAxis } from '../canvas/axes';
 import { drawTitle, drawSourceAndFootnote, labelStride, widestLabel } from '../canvas/labels';
-import { drawLegend, measureLegendWidth } from '../canvas/legend';
+import { drawLegend, drawInsideLegend, measureLegendWidth } from '../canvas/legend';
 import { getStackedFill, isLightFill, resolveFill, isLightFillValue } from '../canvas/patterns';
 
 export function renderAbsBarGraph(
@@ -391,48 +391,19 @@ export function renderAbsBarGraph(
   if (showLegend && data.insideLegend) {
     // 시험지는 범례를 플롯 안쪽 모서리에 작은 상자로 둔다.
     // 막대와 겹치는 모서리는 피한다 — 어느 나라를 고르든 가려지면 안 된다.
-    ctx.save();
-    const fs = options.fontSize.dataLabel * 0.9;
-    ctx.font = getFont(fs, font, customFont, 'bold');
-    const rowH = fs * 1.5;
-    const swatch = fs * 0.95;
-    const padX = 8;
-    const boxW = padX * 2 + swatch + 8 + widestLabel(ctx, data.seriesLabels);
-    const boxH = rowH * sCount + 8;
-    const margin = 8;
-
-    const spotAt = (corner: string) => ({
-      x: corner.endsWith('right') ? plotX + plotW - boxW - margin : plotX + margin,
-      y: corner.startsWith('top') ? plotY + margin : plotY + plotH - boxH - margin,
+    drawInsideLegend({
+      ctx,
+      items: data.seriesLabels.map((label, i) => ({
+        type: 'rect' as const,
+        fillStyle: fillOf(i),
+        label,
+      })),
+      corner: data.insideLegend,
+      plotX, plotY, plotW, plotH,
+      fontSize: options.fontSize.dataLabel * 0.9,
+      font: getFont(options.fontSize.dataLabel * 0.9, font, customFont, 'bold'),
+      avoid: barRects,
     });
-    const order = data.insideLegend === 'top-left'
-      ? ['top-left', 'top-right', 'bottom-left', 'bottom-right']
-      : ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
-    const clear = (s: { x: number; y: number }) => !barRects.some(
-      (b) => b.x0 < s.x + boxW && b.x1 > s.x && b.y0 < s.y + boxH && b.y1 > s.y
-    );
-    const spots = order.map(spotAt);
-    const spot = spots.find(clear) ?? spots[0];
-
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(spot.x, spot.y, boxW, boxH);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-    ctx.strokeRect(spot.x, spot.y, boxW, boxH);
-
-    for (let i = 0; i < sCount; i++) {
-      const cy = spot.y + 4 + rowH * (i + 0.5);
-      ctx.fillStyle = fillOf(i);
-      ctx.fillRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
-      ctx.strokeStyle = '#000';
-      ctx.strokeRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
-      ctx.fillStyle = '#000';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(data.seriesLabels[i], spot.x + padX + swatch + 8, cy);
-    }
-    ctx.restore();
   } else if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,

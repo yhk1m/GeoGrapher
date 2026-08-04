@@ -1,6 +1,6 @@
 // © 2026 김용현
 // 공통 범례 렌더링
-import { type LegendPosition } from '../data/types';
+import { type LegendPosition, type InsideLegendCorner } from '../data/types';
 
 export interface LegendItem {
   type: 'rect' | 'circle' | 'line';
@@ -13,6 +13,118 @@ export interface LegendItem {
   dash?: number[];
   /** 선 아이콘(line)의 굵기 — 미지정 시 2.5 */
   lineWidth?: number;
+  /** 선 아이콘 가운데 점의 모양 — 미지정 시 원 */
+  marker?: 'circle' | 'square';
+}
+
+export interface InsideLegendParams {
+  ctx: CanvasRenderingContext2D;
+  items: LegendItem[];
+  /** 1순위 모서리. 여기가 막히면 나머지 셋을 차례로 본다. */
+  corner: InsideLegendCorner;
+  plotX: number;
+  plotY: number;
+  plotW: number;
+  plotH: number;
+  fontSize: number;
+  /** 글꼴 문자열 — 그래프 글꼴을 그대로 쓰라고 호출부가 넘긴다 */
+  font: string;
+  /** 이 사각형들과 겹치는 모서리는 피한다 (막대·점 등이 가려지면 안 된다) */
+  avoid?: { x0: number; y0: number; x1: number; y1: number }[];
+}
+
+/**
+ * 범례를 플롯 **안쪽** 모서리에 작은 상자로 그린다.
+ *
+ * 시험지 그래프는 범례를 그림 바깥이 아니라 빈 구석에 넣는 경우가 많다.
+ * `avoid`를 주면 자료를 덮지 않는 모서리를 골라 쓴다 — 어떤 값이 들어와도
+ * 막대나 점이 가려지면 안 되기 때문이다.
+ */
+export function drawInsideLegend({
+  ctx, items, corner, plotX, plotY, plotW, plotH, fontSize, font, avoid = [],
+}: InsideLegendParams): void {
+  if (items.length === 0) return;
+
+  ctx.save();
+  ctx.font = font;
+
+  const rowH = fontSize * 1.5;
+  const swatch = fontSize * 0.95;
+  const padX = 8;
+  const iconW = (item: LegendItem) => (item.type === 'line' ? swatch * 2 : swatch);
+  const maxIconW = Math.max(...items.map(iconW));
+  const maxLabelW = Math.max(...items.map((i) => ctx.measureText(i.label).width));
+  const boxW = padX * 2 + maxIconW + 8 + maxLabelW;
+  const boxH = rowH * items.length + 8;
+  const margin = 8;
+
+  const spotAt = (c: InsideLegendCorner) => ({
+    x: c.endsWith('right') ? plotX + plotW - boxW - margin : plotX + margin,
+    y: c.startsWith('top') ? plotY + margin : plotY + plotH - boxH - margin,
+  });
+  const others: InsideLegendCorner[] = ['top-right', 'top-left', 'bottom-right', 'bottom-left'];
+  const order = [corner, ...others.filter((c) => c !== corner)];
+  const spots = order.map(spotAt);
+  const clear = (s: { x: number; y: number }) => !avoid.some(
+    (b) => b.x0 < s.x + boxW && b.x1 > s.x && b.y0 < s.y + boxH && b.y1 > s.y
+  );
+  const spot = spots.find(clear) ?? spots[0];
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(spot.x, spot.y, boxW, boxH);
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  ctx.strokeRect(spot.x, spot.y, boxW, boxH);
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const cy = spot.y + 4 + rowH * (i + 0.5);
+    drawInsideIcon(ctx, item, spot.x + padX, cy, swatch);
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.label, spot.x + padX + maxIconW + 8, cy);
+  }
+  ctx.restore();
+}
+
+/** 플롯 안 범례의 아이콘 — 상자 크기에 맞춰 그린다 (바깥 범례의 고정 크기와 다르다) */
+function drawInsideIcon(
+  ctx: CanvasRenderingContext2D,
+  item: LegendItem,
+  x: number,
+  cy: number,
+  size: number
+) {
+  if (item.type === 'line') {
+    const w = size * 2;
+    ctx.strokeStyle = typeof item.fillStyle === 'string' ? item.fillStyle : '#000';
+    ctx.lineWidth = item.lineWidth ?? 2;
+    ctx.setLineDash(item.dash && item.dash.length > 0 ? item.dash : []);
+    ctx.beginPath();
+    ctx.moveTo(x, cy);
+    ctx.lineTo(x + w, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = item.fillStyle;
+    const r = size * 0.3;
+    if (item.marker === 'square') {
+      ctx.fillRect(x + w / 2 - r, cy - r, r * 2, r * 2);
+    } else {
+      ctx.beginPath();
+      ctx.arc(x + w / 2, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return;
+  }
+
+  ctx.fillStyle = item.fillStyle;
+  ctx.fillRect(x, cy - size / 2, size, size);
+  ctx.strokeStyle = item.strokeStyle ?? '#000';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, cy - size / 2, size, size);
 }
 
 const LINE_ICON_SIZE = 36;
