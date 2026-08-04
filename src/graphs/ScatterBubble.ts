@@ -32,9 +32,17 @@ function renderNormal(
   const cf = options.customFont;
   const fs = options.fontSize;
 
+  // 범례를 플롯 바깥에 둘 참이면 먼저 크기를 재서 오른쪽 여백을 확보한다.
+  // 그려 놓고 자리를 잡으면 이미 늦다.
+  const outsideLegend = data.bubbleLegendPosition === 'outside-right'
+    && data.showBubble && data.points.length > 0;
+  const bubbleM = outsideLegend ? bubbleLegendMetrics(ctx, data, fs, font, cf) : null;
+  const fillM = outsideLegend ? measureFillLegend(ctx, data, fs, font, cf) : { boxW: 0, boxH: 0 };
+  const legendW = Math.max(bubbleM?.boxW ?? 0, fillM.boxW);
+
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: 60,
+    right: legendW > 0 ? legendW + 40 : 60,
     bottom: (() => {
       let b = 90;
       if (options.source) b += 30;
@@ -166,7 +174,16 @@ function renderNormal(
     { left: plotX, right: plotX + plotW, top: plotY, bottom: plotY + plotH });
 
   // 버블 크기 범례
-  if (data.showBubble && data.points.length > 0) {
+  if (outsideLegend) {
+    // 플롯 바깥 오른쪽 — 위에서부터 차례로 쌓는다. 자료를 덮을 일이 없다.
+    const x = plotX + plotW + 20;
+    let y = plotY;
+    if (bubbleM) {
+      drawBubbleLegendAt(ctx, bubbleM, x, y, font, cf);
+      y += bubbleM.boxH + 8;
+    }
+    if (fillM.boxH > 0) drawFillLegendAt(ctx, data, x, y, fillM, fs, font, cf);
+  } else if (data.showBubble && data.points.length > 0) {
     const avoid = bubbleRects(data, toCanvasX, toCanvasY);
     const fill = measureFillLegend(ctx, data, fs, font, cf);
     const used = drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf, avoid, fill.boxH);
@@ -519,6 +536,11 @@ function bubbleRects(
 const CORNERS = ['top-right', 'top-left', 'bottom-right', 'bottom-left'] as const;
 type Corner = (typeof CORNERS)[number];
 
+/** 플롯 안쪽에 그릴 때 쓸 모서리. `outside-right` 는 위-오른쪽으로 본다. */
+function insideCorner(pos: ScatterGraphData['bubbleLegendPosition']): Corner {
+  return pos === 'outside-right' || !pos ? 'top-right' : pos;
+}
+
 /**
  * 범례 상자를 놓을 모서리를 고른다.
  *
@@ -591,6 +613,125 @@ function measureFillLegend(
 
 /** 버블 크기 범례: 겹친 원 + 박스 */
 /** 그린 범례 상자의 높이를 돌려준다 (아래에 다른 범례를 붙일 때 쓴다) */
+interface BubbleLegendMetrics {
+  uniqueSteps: number[];
+  labelOf: (size: number) => string;
+  radiusOf: (size: number) => number;
+  maxR: number;
+  boxW: number;
+  boxH: number;
+  labelOffsets: number[];
+  lowest: number;
+  labelFontSize: number;
+  pad: number;
+}
+
+/** 버블 범례의 크기·배치를 잰다. 그리기 전에 여백을 잡아야 할 때도 쓴다. */
+function bubbleLegendMetrics(
+  ctx: CanvasRenderingContext2D,
+  data: ScatterGraphData,
+  fs: GraphOptions['fontSize'],
+  font: GraphOptions['fontFamily'],
+  cf: string,
+): BubbleLegendMetrics | null {
+  const sizes = data.points.map((p) => p.size).filter((s) => s > 0);
+  if (sizes.length === 0) return null;
+  const maxSize = Math.max(...sizes);
+  if (maxSize === 0) return null;
+
+  // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다).
+  // 단 **데이터에서 가장 큰 원보다 큰 항목은 뺀다** — 원 반지름이
+  // (크기 / 데이터최대) 비율이라 배율이 1을 넘으면 상자와 캔버스를 뚫고 나간다.
+  const given = data.bubbleLegendItems?.filter((it) => it.size > 0 && it.size <= maxSize) ?? [];
+  const steps = given.length > 0
+    ? given.map((it) => it.size)
+    : [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
+  const uniqueSteps = [...new Set(steps)].sort((a, b) => b - a);
+  const labelOf = (size: number) =>
+    given.find((it) => it.size === size)?.label ?? String(size);
+
+  // ⚠️ 범례 원은 **데이터 원과 반지름 식이 완전히 같아야 한다**.
+  // 범례는 "이만한 원이 이만한 값"을 알려 주는 자이므로, 배율이 조금이라도
+  // 다르면 자로서 못 쓴다. (예전에는 1.2배로 그려 따로 놀았다.)
+  const radiusOf = (size: number) => (size / maxSize) * data.bubbleScale;
+  const maxR = radiusOf(uniqueSteps[0]);
+
+  const labelFontSize = fs.dataLabel * 0.85;
+  ctx.save();
+  ctx.font = getFont(labelFontSize, font, cf, 'bold');
+  const labelW = Math.max(50, ...uniqueSteps.map((v) => ctx.measureText(labelOf(v)).width));
+  ctx.restore();
+  const pad = 14;
+  const boxW = maxR * 2 + labelW + pad * 2 + 20;
+
+  // 라벨 세로 위치를 먼저 잡는다.
+  // 원 크기 차이가 크면 작은 원들의 지시선 높이가 거의 같아 라벨이 겹치므로
+  // 아래로 밀어 간격을 확보하는데, 그만큼 상자도 커져야 라벨이 안 잘린다.
+  // (원 바닥을 0 으로 놓은 상대 좌표. 음수가 위쪽이다.)
+  const labelGap = labelFontSize * 1.2;
+  const labelOffsets: number[] = [];
+  let cursor = -Infinity;
+  for (const size of uniqueSteps) {
+    const r = radiusOf(size);
+    cursor = Math.max(-2 * r, cursor + labelGap);
+    labelOffsets.push(cursor);
+  }
+  const lowest = Math.max(0, ...labelOffsets) + labelFontSize / 2;
+  const boxH = maxR * 2 + lowest + pad * 2 + 10;
+
+  return { uniqueSteps, labelOf, radiusOf, maxR, boxW, boxH, labelOffsets, lowest, labelFontSize, pad };
+}
+
+/** 잰 값을 받아 지정한 자리에 그린다 */
+function drawBubbleLegendAt(
+  ctx: CanvasRenderingContext2D,
+  m: BubbleLegendMetrics,
+  boxX: number,
+  boxY: number,
+  font: GraphOptions['fontFamily'],
+  cf: string,
+) {
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(boxX, boxY, m.boxW, m.boxH, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  const circleX = boxX + m.pad + m.maxR;
+  const bottomCircleY = boxY + m.boxH - m.pad - m.lowest;
+
+  m.uniqueSteps.forEach((size, si) => {
+    const r = m.radiusOf(size);
+    const cy = bottomCircleY - r;
+
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(circleX, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 2]);
+    const lineY = cy - r;
+    ctx.beginPath();
+    ctx.moveTo(circleX, lineY);
+    ctx.lineTo(circleX + m.maxR + 12, lineY);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = '#000';
+    ctx.font = getFont(m.labelFontSize, font, cf, 'bold');
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(m.labelOf(size), circleX + m.maxR + 16, bottomCircleY + m.labelOffsets[si]);
+  });
+}
+
+/** 플롯 **안쪽** 모서리에 그린다 — 버블을 가장 적게 덮는 자리를 고른다 */
 function drawBubbleLegend(
   ctx: CanvasRenderingContext2D,
   data: ScatterGraphData,
@@ -604,105 +745,13 @@ function drawBubbleLegend(
   avoid: Rect[] = [],
   extraH = 0,
 ): { height: number; corner: Corner; bottom: number } {
-  const preferred = (data.bubbleLegendPosition || 'bottom-right') as Corner;
-  const sizes = data.points.map((p) => p.size).filter((s) => s > 0);
-  if (sizes.length === 0) return { height: 0, corner: preferred, bottom: 0 };
+  const preferred = insideCorner(data.bubbleLegendPosition);
+  const m = bubbleLegendMetrics(ctx, data, fs, font, cf);
+  if (!m) return { height: 0, corner: preferred, bottom: 0 };
 
-  const maxSize = Math.max(...sizes);
-  if (maxSize === 0) return { height: 0, corner: preferred, bottom: 0 };
-
-  // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다).
-  // 단 **데이터에서 가장 큰 원보다 큰 항목은 뺀다** — 원 반지름이
-  // (크기 / 데이터최대) 비율이라 배율이 1을 넘으면 상자와 캔버스를 뚫고 나간다.
-  // 실제로 그만한 원이 없으니 크기 기준으로서도 뜻이 없다.
-  const given = data.bubbleLegendItems?.filter((it) => it.size > 0 && it.size <= maxSize) ?? [];
-  const steps = given.length > 0
-    ? given.map((it) => it.size)
-    : [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
-  const uniqueSteps = [...new Set(steps)].sort((a, b) => b - a);
-  const labelOf = (size: number) =>
-    given.find((it) => it.size === size)?.label ?? String(size);
-
-  // ⚠️ 범례 원은 **데이터 원과 반지름 식이 완전히 같아야 한다**.
-  // 범례는 "이만한 원이 이만한 값"을 알려 주는 자이므로, 배율이 조금이라도
-  // 다르면 자로서 못 쓴다. (예전에는 1.2배로 그려 따로 놀았다.)
-  // 상자는 실제로 그려질 가장 큰 원에 맞춘다 — 큰 항목이 빠지면 위가 비므로.
-  const radiusOf = (size: number) => (size / maxSize) * data.bubbleScale;
-  const maxR = radiusOf(uniqueSteps[0]);
-  ctx.save();
-  ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
-  const labelW = Math.max(50, ...uniqueSteps.map((v) => ctx.measureText(labelOf(v)).width));
-  ctx.restore();
-  const pad = 14;
-  const boxW = maxR * 2 + labelW + pad * 2 + 20;
-
-  // 라벨 세로 위치를 먼저 잡는다.
-  // 원 크기 차이가 크면 작은 원들의 지시선 높이가 거의 같아 라벨이 겹치므로
-  // 아래로 밀어 간격을 확보하는데, 그만큼 상자도 커져야 라벨이 안 잘린다.
-  // (원 바닥을 0 으로 놓은 상대 좌표. 음수가 위쪽이다.)
-  const labelFontSize = fs.dataLabel * 0.85;
-  const labelGap = labelFontSize * 1.2;
-  const labelOffsets: number[] = [];
-  let cursor = -Infinity;
-  for (const size of uniqueSteps) {
-    const r = radiusOf(size);
-    cursor = Math.max(-2 * r, cursor + labelGap);
-    labelOffsets.push(cursor);
-  }
-  const lowest = Math.max(0, ...labelOffsets) + labelFontSize / 2;
-  const boxH = maxR * 2 + lowest + pad * 2 + 10;
-
-  // 위치 계산 — 버블을 덮지 않는 모서리를 고른다 (아래에 쌓일 채움 범례까지 함께)
-  const spot = pickLegendCorner(
-    (data.bubbleLegendPosition || 'bottom-right') as Corner,
-    boxW, boxH, plotX, plotY, plotW, plotH, avoid, extraH,
-  );
-  const boxX = spot.x;
-  const boxY = spot.y;
-
-  // 박스 배경
-  ctx.fillStyle = '#fff';
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(boxX, boxY, boxW, boxH, 4);
-  ctx.fill();
-  ctx.stroke();
-
-  const circleX = boxX + pad + maxR;
-  const bottomCircleY = boxY + boxH - pad - lowest;
-
-  uniqueSteps.forEach((size, si) => {
-    const r = radiusOf(size);
-    const cy = bottomCircleY - r;
-
-    // 원
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(circleX, cy, r, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // 점선 + 라벨
-    ctx.save();
-    ctx.strokeStyle = '#666';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 2]);
-    const lineY = cy - r;
-    ctx.beginPath();
-    ctx.moveTo(circleX, lineY);
-    ctx.lineTo(circleX + maxR + 12, lineY);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = '#000';
-    ctx.font = getFont(labelFontSize, font, cf, 'bold');
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(labelOf(size), circleX + maxR + 16, bottomCircleY + labelOffsets[si]);
-  });
-
-  return { height: boxH, corner: spot.corner, bottom: boxY + boxH };
+  const spot = pickLegendCorner(preferred, m.boxW, m.boxH, plotX, plotY, plotW, plotH, avoid, extraH);
+  drawBubbleLegendAt(ctx, m, spot.x, spot.y, font, cf);
+  return { height: m.boxH, corner: spot.corner, bottom: spot.y + m.boxH };
 }
 
 /**
@@ -757,6 +806,60 @@ function drawBoxedLabel(
  *
  * @param offsetH 위에 이미 그려진 범례의 높이 (겹치지 않게 그만큼 비켜 놓는다)
  */
+/** 잰 값을 받아 지정한 자리에 그린다 */
+function drawFillLegendAt(
+  ctx: CanvasRenderingContext2D,
+  data: ScatterGraphData,
+  boxX: number,
+  boxY: number,
+  m: { boxW: number; boxH: number },
+  fs: GraphOptions['fontSize'],
+  font: GraphOptions['fontFamily'],
+  cf: string,
+) {
+  const legend = data.fillLegend;
+  if (!legend || legend.items.length === 0) return;
+
+  const fontSize = fs.dataLabel * 0.8;
+  ctx.save();
+  ctx.font = getFont(fontSize, font, cf, 'bold');
+  const rowH = fontSize * 1.5;
+  const swatch = fontSize * 0.95;
+  const pad = 8;
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(boxX, boxY, m.boxW, m.boxH);
+  ctx.strokeStyle = '#666';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  ctx.strokeRect(boxX, boxY, m.boxW, m.boxH);
+
+  let y = boxY + pad;
+  if (legend.title) {
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(legend.title, boxX + m.boxW / 2, y);
+    y += rowH;
+  }
+
+  for (const it of legend.items) {
+    ctx.fillStyle = it.fill;
+    ctx.fillRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
+
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(it.label, boxX + pad + swatch + 6, y + rowH / 2);
+    y += rowH;
+  }
+  ctx.restore();
+}
+
+/** 플롯 안쪽 — 버블 범례가 고른 모서리를 따라가 그 바로 아래에 붙는다 */
 function drawFillLegend(
   ctx: CanvasRenderingContext2D,
   data: ScatterGraphData,
@@ -774,58 +877,11 @@ function drawFillLegend(
   const legend = data.fillLegend;
   if (!legend || legend.items.length === 0) return;
 
-  const fontSize = fs.dataLabel * 0.8;
-  ctx.save();
-  ctx.font = getFont(fontSize, font, cf, 'bold');
-
-  const rowH = fontSize * 1.5;
-  const swatch = fontSize * 0.95;
-  const pad = 8;
-  const titleH = legend.title ? rowH : 0;
-  const textW = Math.max(
-    legend.title ? ctx.measureText(legend.title).width : 0,
-    ...legend.items.map((it) => swatch + 6 + ctx.measureText(it.label).width),
-  );
-  const boxW = textW + pad * 2;
-  const boxH = titleH + legend.items.length * rowH + pad * 2;
-
-  // 버블 범례가 고른 모서리를 그대로 따라가고, 그 **바로 아래**에 붙는다.
-  // 버블 범례는 두 상자가 함께 들어갈 자리를 이미 잡아 두었으므로
-  // 위/아래 모서리를 따로 계산할 필요가 없다 (그러다 서로 겹쳤었다).
-  const boxX = corner.endsWith('right') ? plotX + plotW - boxW - 10 : plotX + 10;
+  const m = measureFillLegend(ctx, data, fs, font, cf);
+  const boxX = corner.endsWith('right') ? plotX + plotW - m.boxW - 10 : plotX + 10;
   const boxY = stackBelow > 0
     ? stackBelow + 6
-    : (corner.startsWith('top') ? plotY + 10 : plotY + plotH - boxH - 10);
+    : (corner.startsWith('top') ? plotY + 10 : plotY + plotH - m.boxH - 10);
 
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(boxX, boxY, boxW, boxH);
-  ctx.strokeStyle = '#666';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([]);
-  ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-  let y = boxY + pad;
-  if (legend.title) {
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(legend.title, boxX + boxW / 2, y);
-    y += rowH;
-  }
-
-  for (const it of legend.items) {
-    ctx.fillStyle = it.fill;
-    ctx.fillRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 0.8;
-    ctx.strokeRect(boxX + pad, y + (rowH - swatch) / 2, swatch, swatch);
-
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(it.label, boxX + pad + swatch + 6, y + rowH / 2);
-    y += rowH;
-  }
-
-  ctx.restore();
+  drawFillLegendAt(ctx, data, boxX, boxY, m, fs, font, cf);
 }
