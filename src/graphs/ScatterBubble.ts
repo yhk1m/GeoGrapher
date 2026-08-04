@@ -167,8 +167,10 @@ function renderNormal(
 
   // 버블 크기 범례
   if (data.showBubble && data.points.length > 0) {
-    const usedH = drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
-    drawFillLegend(ctx, data, plotX, plotY, plotW, plotH, usedH, fs, font, cf);
+    const avoid = bubbleRects(data, toCanvasX, toCanvasY);
+    const fill = measureFillLegend(ctx, data, fs, font, cf);
+    const used = drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf, avoid, fill.boxH);
+    drawFillLegend(ctx, data, plotX, plotY, plotW, plotH, used.bottom, fs, font, cf, used.corner);
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
@@ -377,7 +379,8 @@ function renderDeviation(
 
   // 버블 크기 범례
   if (data.showBubble && data.points.length > 0) {
-    drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf);
+    drawBubbleLegend(ctx, data, plotX, plotY, plotW, plotH, fs, font, cf,
+      bubbleRects(data, toCanvasX, toCanvasY));
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
@@ -409,7 +412,10 @@ function drawPoints(
     }
   }
 
-  for (const pt of data.points) {
+  // 큰 원부터 그린다 — 겹칠 때 작은 원이 위로 올라와 가려지지 않는다.
+  // (원은 흰색으로 바탕을 지우고 칠하므로, 나중에 그린 쪽이 위에 온다.)
+  const drawOrder = [...data.points].sort((a, b) => b.size - a.size);
+  for (const pt of drawOrder) {
     const cx = toX(pt.x);
     const cy = toY(pt.y);
 
@@ -493,6 +499,96 @@ function formatTick(v: number): string {
   return Math.abs(v) < 0.0001 ? '0' : Number(v.toFixed(2)).toString();
 }
 
+interface Rect { x0: number; y0: number; x1: number; y1: number }
+
+/** 그려진 버블(과 중심점)이 차지한 자리 — 범례가 이걸 덮지 않아야 한다 */
+function bubbleRects(
+  data: ScatterGraphData,
+  toX: (v: number) => number,
+  toY: (v: number) => number,
+): Rect[] {
+  const maxSize = data.points.length > 0 ? Math.max(...data.points.map((p) => p.size), 1) : 1;
+  return data.points.map((pt) => {
+    const r = data.showBubble && pt.size > 0 ? (pt.size / maxSize) * data.bubbleScale : 4;
+    const cx = toX(pt.x);
+    const cy = toY(pt.y);
+    return { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r };
+  });
+}
+
+const CORNERS = ['top-right', 'top-left', 'bottom-right', 'bottom-left'] as const;
+type Corner = (typeof CORNERS)[number];
+
+/**
+ * 범례 상자를 놓을 모서리를 고른다.
+ *
+ * 버블을 **가장 적게 덮는** 모서리를 쓴다. 빈 모서리를 찾는 방식은 상자가
+ * 클 때(두 범례를 합치면 플롯 높이의 절반을 넘는다) 네 곳이 모두 걸려
+ * 그대로 원위치에 놓이는 일이 잦았다. 겹친 넓이로 견주면 늘 가장 나은
+ * 자리가 나온다. 넓이가 같으면 원하는 모서리를 먼저 쓴다.
+ *
+ * @param extraH 아래에 함께 쌓일 상자의 높이 — 두 범례가 같이 들어갈 자리를 본다
+ */
+function pickLegendCorner(
+  preferred: Corner,
+  boxW: number,
+  boxH: number,
+  plotX: number,
+  plotY: number,
+  plotW: number,
+  plotH: number,
+  avoid: Rect[],
+  extraH = 0,
+): { corner: Corner; x: number; y: number } {
+  const total = boxH + (extraH > 0 ? extraH + 6 : 0);
+  const spotAt = (c: Corner) => ({
+    x: c.endsWith('right') ? plotX + plotW - boxW - 10 : plotX + 10,
+    y: c.startsWith('top') ? plotY + 10 : plotY + plotH - total - 10,
+  });
+  /** 상자가 버블을 덮은 넓이 */
+  const overlap = (x: number, y: number) => avoid.reduce((sum, b) => {
+    const w = Math.min(b.x1, x + boxW) - Math.max(b.x0, x);
+    const h = Math.min(b.y1, y + total) - Math.max(b.y0, y);
+    return sum + (w > 0 && h > 0 ? w * h : 0);
+  }, 0);
+
+  const order: Corner[] = [preferred, ...CORNERS.filter((c) => c !== preferred)];
+  let best = { corner: preferred, ...spotAt(preferred), score: Infinity };
+  for (const corner of order) {
+    const { x, y } = spotAt(corner);
+    const score = overlap(x, y);
+    if (score < best.score) best = { corner, x, y, score };
+    if (score === 0) break;
+  }
+  return { corner: best.corner, x: best.x, y: best.y };
+}
+
+/** 채움 범례가 차지할 크기 — 모서리를 고를 때 두 상자를 함께 본다 */
+function measureFillLegend(
+  ctx: CanvasRenderingContext2D,
+  data: ScatterGraphData,
+  fs: GraphOptions['fontSize'],
+  font: GraphOptions['fontFamily'],
+  cf: string,
+): { boxW: number; boxH: number } {
+  const legend = data.fillLegend;
+  if (!legend || legend.items.length === 0) return { boxW: 0, boxH: 0 };
+
+  const fontSize = fs.dataLabel * 0.8;
+  ctx.save();
+  ctx.font = getFont(fontSize, font, cf, 'bold');
+  const rowH = fontSize * 1.5;
+  const swatch = fontSize * 0.95;
+  const pad = 8;
+  const titleH = legend.title ? rowH : 0;
+  const textW = Math.max(
+    legend.title ? ctx.measureText(legend.title).width : 0,
+    ...legend.items.map((it) => swatch + 6 + ctx.measureText(it.label).width),
+  );
+  ctx.restore();
+  return { boxW: textW + pad * 2, boxH: titleH + legend.items.length * rowH + pad * 2 };
+}
+
 /** 버블 크기 범례: 겹친 원 + 박스 */
 /** 그린 범례 상자의 높이를 돌려준다 (아래에 다른 범례를 붙일 때 쓴다) */
 function drawBubbleLegend(
@@ -505,12 +601,15 @@ function drawBubbleLegend(
   fs: GraphOptions['fontSize'],
   font: GraphOptions['fontFamily'],
   cf: string,
-): number {
+  avoid: Rect[] = [],
+  extraH = 0,
+): { height: number; corner: Corner; bottom: number } {
+  const preferred = (data.bubbleLegendPosition || 'bottom-right') as Corner;
   const sizes = data.points.map((p) => p.size).filter((s) => s > 0);
-  if (sizes.length === 0) return 0;
+  if (sizes.length === 0) return { height: 0, corner: preferred, bottom: 0 };
 
   const maxSize = Math.max(...sizes);
-  if (maxSize === 0) return 0;
+  if (maxSize === 0) return { height: 0, corner: preferred, bottom: 0 };
 
   // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다).
   // 단 **데이터에서 가장 큰 원보다 큰 항목은 뺀다** — 원 반지름이
@@ -553,13 +652,13 @@ function drawBubbleLegend(
   const lowest = Math.max(0, ...labelOffsets) + labelFontSize / 2;
   const boxH = maxR * 2 + lowest + pad * 2 + 10;
 
-  // 위치 계산
-  const pos = data.bubbleLegendPosition || 'bottom-right';
-  let boxX: number, boxY: number;
-  if (pos === 'top-left') { boxX = plotX + 10; boxY = plotY + 10; }
-  else if (pos === 'top-right') { boxX = plotX + plotW - boxW - 10; boxY = plotY + 10; }
-  else if (pos === 'bottom-left') { boxX = plotX + 10; boxY = plotY + plotH - boxH - 10; }
-  else { boxX = plotX + plotW - boxW - 10; boxY = plotY + plotH - boxH - 10; }
+  // 위치 계산 — 버블을 덮지 않는 모서리를 고른다 (아래에 쌓일 채움 범례까지 함께)
+  const spot = pickLegendCorner(
+    (data.bubbleLegendPosition || 'bottom-right') as Corner,
+    boxW, boxH, plotX, plotY, plotW, plotH, avoid, extraH,
+  );
+  const boxX = spot.x;
+  const boxY = spot.y;
 
   // 박스 배경
   ctx.fillStyle = '#fff';
@@ -603,7 +702,7 @@ function drawBubbleLegend(
     ctx.fillText(labelOf(size), circleX + maxR + 16, bottomCircleY + labelOffsets[si]);
   });
 
-  return boxH;
+  return { height: boxH, corner: spot.corner, bottom: boxY + boxH };
 }
 
 /**
@@ -665,10 +764,12 @@ function drawFillLegend(
   plotY: number,
   plotW: number,
   plotH: number,
-  offsetH: number,
+  /** 버블 범례의 아래끝. 0 이면 버블 범례가 없다. */
+  stackBelow: number,
   fs: GraphOptions['fontSize'],
   font: GraphOptions['fontFamily'],
   cf: string,
+  corner: Corner = 'bottom-right',
 ) {
   const legend = data.fillLegend;
   if (!legend || legend.items.length === 0) return;
@@ -688,13 +789,13 @@ function drawFillLegend(
   const boxW = textW + pad * 2;
   const boxH = titleH + legend.items.length * rowH + pad * 2;
 
-  const pos = data.bubbleLegendPosition || 'bottom-right';
-  const gap = offsetH > 0 ? offsetH + 6 : 0;
-  let boxX: number, boxY: number;
-  if (pos === 'top-left') { boxX = plotX + 10; boxY = plotY + 10 + gap; }
-  else if (pos === 'top-right') { boxX = plotX + plotW - boxW - 10; boxY = plotY + 10 + gap; }
-  else if (pos === 'bottom-left') { boxX = plotX + 10; boxY = plotY + plotH - boxH - 10 - gap; }
-  else { boxX = plotX + plotW - boxW - 10; boxY = plotY + plotH - boxH - 10 - gap; }
+  // 버블 범례가 고른 모서리를 그대로 따라가고, 그 **바로 아래**에 붙는다.
+  // 버블 범례는 두 상자가 함께 들어갈 자리를 이미 잡아 두었으므로
+  // 위/아래 모서리를 따로 계산할 필요가 없다 (그러다 서로 겹쳤었다).
+  const boxX = corner.endsWith('right') ? plotX + plotW - boxW - 10 : plotX + 10;
+  const boxY = stackBelow > 0
+    ? stackBelow + 6
+    : (corner.startsWith('top') ? plotY + 10 : plotY + plotH - boxH - 10);
 
   ctx.fillStyle = '#fff';
   ctx.fillRect(boxX, boxY, boxW, boxH);
