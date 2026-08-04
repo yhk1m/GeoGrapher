@@ -524,10 +524,11 @@ function drawBubbleLegend(
   const labelOf = (size: number) =>
     given.find((it) => it.size === size)?.label ?? String(size);
 
-  // 배율은 데이터 최대 크기 기준이지만, 상자는 **실제로 그려질 가장 큰 원**에
-  // 맞춘다. 안 그러면 큰 항목이 빠졌을 때 상자 위쪽이 텅 빈다.
-  const scaleR = data.bubbleScale * 1.2;
-  const radiusOf = (size: number) => (size / maxSize) * scaleR;
+  // ⚠️ 범례 원은 **데이터 원과 반지름 식이 완전히 같아야 한다**.
+  // 범례는 "이만한 원이 이만한 값"을 알려 주는 자이므로, 배율이 조금이라도
+  // 다르면 자로서 못 쓴다. (예전에는 1.2배로 그려 따로 놀았다.)
+  // 상자는 실제로 그려질 가장 큰 원에 맞춘다 — 큰 항목이 빠지면 위가 비므로.
+  const radiusOf = (size: number) => (size / maxSize) * data.bubbleScale;
   const maxR = radiusOf(uniqueSteps[0]);
   ctx.save();
   ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
