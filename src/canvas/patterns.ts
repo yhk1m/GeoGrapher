@@ -12,10 +12,31 @@ export type PatternType =
 
 const TILE = 10;
 
-function makeTile(draw: (pctx: CanvasRenderingContext2D, s: number) => void): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = TILE;
-  c.height = TILE;
+/**
+ * 패턴 타일용 작은 캔버스를 만든다.
+ *
+ * 브라우저면 `document`로 만들고, 없으면(서버 렌더·테스트) 지금 그리고 있는
+ * 캔버스와 **같은 종류**를 하나 더 만든다. `ctx.createPattern`은 같은 백엔드의
+ * 캔버스만 받으므로 이렇게 해야 어느 쪽에서든 패턴이 나온다.
+ */
+function createTileCanvas(ctx: CanvasRenderingContext2D, size: number): HTMLCanvasElement {
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    return c;
+  }
+  const Ctor = (ctx.canvas as unknown as {
+    constructor: new (w: number, h: number) => HTMLCanvasElement;
+  }).constructor;
+  return new Ctor(size, size);
+}
+
+function makeTile(
+  ctx: CanvasRenderingContext2D,
+  draw: (pctx: CanvasRenderingContext2D, s: number) => void
+): HTMLCanvasElement {
+  const c = createTileCanvas(ctx, TILE);
   const p = c.getContext('2d')!;
   // 기본 흰색 배경
   p.fillStyle = '#fff';
@@ -24,10 +45,10 @@ function makeTile(draw: (pctx: CanvasRenderingContext2D, s: number) => void): HT
   return c;
 }
 
-function createPatternCanvas(type: PatternType): HTMLCanvasElement {
+function createPatternCanvas(ctx: CanvasRenderingContext2D, type: PatternType): HTMLCanvasElement {
   switch (type) {
     case 'diagonal':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.strokeStyle = '#000';
         p.lineWidth = 1.5;
         p.beginPath();
@@ -42,7 +63,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'grid':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.strokeStyle = '#000';
         p.lineWidth = 1.2;
         p.beginPath();
@@ -54,7 +75,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'diagonalGrid':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.strokeStyle = '#000';
         p.lineWidth = 1.2;
         p.beginPath();
@@ -66,7 +87,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'dot':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.fillStyle = '#000';
         p.beginPath();
         p.arc(s / 2, s / 2, 1.8, 0, Math.PI * 2);
@@ -74,7 +95,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'dotReverse':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.fillStyle = '#333';
         p.fillRect(0, 0, s, s);
         p.fillStyle = '#fff';
@@ -84,7 +105,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'vertical':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.strokeStyle = '#000';
         p.lineWidth = 1.5;
         p.beginPath();
@@ -94,7 +115,7 @@ function createPatternCanvas(type: PatternType): HTMLCanvasElement {
       });
 
     case 'horizontal':
-      return makeTile((p, s) => {
+      return makeTile(ctx, (p, s) => {
         p.strokeStyle = '#000';
         p.lineWidth = 1.5;
         p.beginPath();
@@ -131,7 +152,7 @@ function getCached(ctx: CanvasRenderingContext2D, type: PatternType): CanvasPatt
   }
   let pat = m.get(type);
   if (!pat) {
-    pat = ctx.createPattern(createPatternCanvas(type), 'repeat')!;
+    pat = ctx.createPattern(createPatternCanvas(ctx, type), 'repeat')!;
     m.set(type, pat);
   }
   return pat;
@@ -145,6 +166,40 @@ export function getStackedFill(
   if (index < SOLID_FILLS.length) return SOLID_FILLS[index];
   const pi = (index - SOLID_FILLS.length) % PATTERN_ORDER.length;
   return getCached(ctx, PATTERN_ORDER[pi]);
+}
+
+/** 채움 지정값에서 패턴을 가리키는 접두사 — 예: `'pattern:diagonal'` */
+export const PATTERN_FILL_PREFIX = 'pattern:';
+
+/**
+ * 채움 지정값(문자열)을 실제 채움으로 바꾼다.
+ *
+ * `'pattern:diagonal'` 이면 사선 빗금 패턴을, 그 밖에는 색 문자열을 그대로 쓴다.
+ * 색과 패턴을 한 문자열 타입으로 다루는 이유는 프로젝트 저장(JSON)에 그대로
+ * 실려야 하기 때문이다 — CanvasPattern 은 직렬화할 수 없다.
+ */
+export function resolveFill(
+  ctx: CanvasRenderingContext2D,
+  value: string
+): string | CanvasPattern {
+  if (!value.startsWith(PATTERN_FILL_PREFIX)) return value;
+  const type = value.slice(PATTERN_FILL_PREFIX.length) as PatternType;
+  return PATTERN_ORDER.includes(type) ? getCached(ctx, type) : value;
+}
+
+/** 그 채움이 밝아서 테두리를 그려야 하는가 (흰색·빗금 등) */
+export function isLightFillValue(value: string): boolean {
+  if (value.startsWith(PATTERN_FILL_PREFIX)) {
+    return value.slice(PATTERN_FILL_PREFIX.length) !== 'dotReverse';
+  }
+  const hex = value.replace('#', '');
+  if (hex.length !== 3 && hex.length !== 6) return false;
+  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  if ([r, g, b].some(Number.isNaN)) return false;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 180;
 }
 
 /** 밝은 채움인지 (흰색/패턴) — 테두리·라벨색 결정용 */

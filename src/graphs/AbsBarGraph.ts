@@ -4,7 +4,7 @@ import { type Padding, clearCanvas, autoRange, getFont } from '../canvas/rendere
 import { drawYAxis } from '../canvas/axes';
 import { drawTitle, drawSourceAndFootnote, labelStride, widestLabel } from '../canvas/labels';
 import { drawLegend, measureLegendWidth } from '../canvas/legend';
-import { getStackedFill, isLightFill } from '../canvas/patterns';
+import { getStackedFill, isLightFill, resolveFill, isLightFillValue } from '../canvas/patterns';
 
 export function renderAbsBarGraph(
   ctx: CanvasRenderingContext2D,
@@ -92,6 +92,12 @@ export function renderAbsBarGraph(
     axis = { ...axis, max: dataMax };
   }
 
+  /** 계열 채움 — seriesFills 를 줬으면 그 값(색 또는 패턴), 아니면 기본 팔레트 */
+  const fillOf = (i: number): string | CanvasPattern => {
+    const v = data.seriesFills?.[i];
+    return v === undefined || v === null ? getStackedFill(ctx, i) : resolveFill(ctx, v);
+  };
+
   // 플롯 안 범례가 막대를 덮지 않도록, 그린 막대 자리를 모아 둔다
   const barRects: { x0: number; y0: number; x1: number; y1: number }[] = [];
   const noteBar = (x: number, y: number, bw: number, bh: number) => {
@@ -145,7 +151,7 @@ export function renderAbsBarGraph(
           const y = Math.min(valToY(cumVal + val), valToY(cumVal));
           const barH = Math.abs(valToY(cumVal) - valToY(cumVal + val));
 
-          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
+          ctx.fillStyle = fillOf(s);
           ctx.fillRect(cx - barW / 2, y, barW, barH);
           noteBar(cx - barW / 2, y, barW, barH);
           ctx.strokeStyle = '#000';
@@ -174,7 +180,7 @@ export function renderAbsBarGraph(
           const barH = Math.abs(valToY(val) - baseY);
           const bx = groupStart + barW * s;
 
-          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
+          ctx.fillStyle = fillOf(s);
           ctx.fillRect(bx, by, barW, barH);
           noteBar(bx, by, barW, barH);
           ctx.strokeStyle = '#000';
@@ -309,7 +315,7 @@ export function renderAbsBarGraph(
           const bx = valToX(cumVal);
           const bw = valToX(cumVal + val) - bx;
 
-          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
+          ctx.fillStyle = fillOf(s);
           ctx.fillRect(bx, cy - barH / 2, bw, barH);
           noteBar(bx, cy - barH / 2, bw, barH);
           ctx.strokeStyle = '#000';
@@ -338,7 +344,7 @@ export function renderAbsBarGraph(
           const bw = valToX(val) - bx;
           const by = groupStart + barH * s;
 
-          ctx.fillStyle = data.seriesFills?.[s] ?? getStackedFill(ctx, s);
+          ctx.fillStyle = fillOf(s);
           ctx.fillRect(bx, by, bw, barH);
           noteBar(bx, by, bw, barH);
           ctx.strokeStyle = '#000';
@@ -417,7 +423,7 @@ export function renderAbsBarGraph(
 
     for (let i = 0; i < sCount; i++) {
       const cy = spot.y + 4 + rowH * (i + 0.5);
-      ctx.fillStyle = data.seriesFills?.[i] ?? getStackedFill(ctx, i);
+      ctx.fillStyle = fillOf(i);
       ctx.fillRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
       ctx.strokeStyle = '#000';
       ctx.strokeRect(spot.x + padX, cy - swatch / 2, swatch, swatch);
@@ -431,8 +437,8 @@ export function renderAbsBarGraph(
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
       // 막대와 같은 채움을 쓴다 — seriesFills 를 준 경우 범례도 그 색이어야 한다
-      fillStyle: data.seriesFills?.[i] ?? getStackedFill(ctx, i),
-      bordered: data.seriesFills?.[i] ? isLightColor(data.seriesFills[i]) : isLightFill(i),
+      fillStyle: fillOf(i),
+      bordered: data.seriesFills?.[i] ? isLightFillValue(data.seriesFills[i]) : isLightFill(i),
       label,
     }));
     drawLegend({
@@ -449,16 +455,4 @@ export function renderAbsBarGraph(
 function formatTick(val: number): string {
   if (Number.isInteger(val)) return val.toString();
   return val.toFixed(1);
-}
-
-/** 채움색이 밝아서 흰 배경과 구분이 안 되는가 (범례 아이콘 테두리 여부) */
-function isLightColor(color: string): boolean {
-  const hex = color.replace('#', '');
-  if (hex.length !== 3 && hex.length !== 6) return false;
-  const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  if ([r, g, b].some(Number.isNaN)) return false;
-  return (r * 299 + g * 587 + b * 114) / 1000 > 180;
 }
