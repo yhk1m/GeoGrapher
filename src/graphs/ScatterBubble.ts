@@ -512,8 +512,11 @@ function drawBubbleLegend(
   const maxSize = Math.max(...sizes);
   if (maxSize === 0) return 0;
 
-  // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다)
-  const given = data.bubbleLegendItems?.filter((it) => it.size > 0) ?? [];
+  // 항목을 직접 준 경우 그대로 쓴다 (자릿수가 큰 값은 자동 표기로는 읽을 수 없다).
+  // 단 **데이터에서 가장 큰 원보다 큰 항목은 뺀다** — 원 반지름이
+  // (크기 / 데이터최대) 비율이라 배율이 1을 넘으면 상자와 캔버스를 뚫고 나간다.
+  // 실제로 그만한 원이 없으니 크기 기준으로서도 뜻이 없다.
+  const given = data.bubbleLegendItems?.filter((it) => it.size > 0 && it.size <= maxSize) ?? [];
   const steps = given.length > 0
     ? given.map((it) => it.size)
     : [maxSize, Math.round(maxSize * 0.5), Math.round(maxSize * 0.2)].filter((v) => v > 0);
@@ -521,7 +524,11 @@ function drawBubbleLegend(
   const labelOf = (size: number) =>
     given.find((it) => it.size === size)?.label ?? String(size);
 
-  const maxR = data.bubbleScale * 1.2;
+  // 배율은 데이터 최대 크기 기준이지만, 상자는 **실제로 그려질 가장 큰 원**에
+  // 맞춘다. 안 그러면 큰 항목이 빠졌을 때 상자 위쪽이 텅 빈다.
+  const scaleR = data.bubbleScale * 1.2;
+  const radiusOf = (size: number) => (size / maxSize) * scaleR;
+  const maxR = radiusOf(uniqueSteps[0]);
   ctx.save();
   ctx.font = getFont(fs.dataLabel * 0.85, font, cf, 'bold');
   const labelW = Math.max(50, ...uniqueSteps.map((v) => ctx.measureText(labelOf(v)).width));
@@ -538,7 +545,7 @@ function drawBubbleLegend(
   const labelOffsets: number[] = [];
   let cursor = -Infinity;
   for (const size of uniqueSteps) {
-    const r = (size / maxSize) * maxR;
+    const r = radiusOf(size);
     cursor = Math.max(-2 * r, cursor + labelGap);
     labelOffsets.push(cursor);
   }
@@ -566,7 +573,7 @@ function drawBubbleLegend(
   const bottomCircleY = boxY + boxH - pad - lowest;
 
   uniqueSteps.forEach((size, si) => {
-    const r = (size / maxSize) * maxR;
+    const r = radiusOf(size);
     const cy = bottomCircleY - r;
 
     // 원

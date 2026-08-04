@@ -67,18 +67,21 @@ interface SourceFootnoteParams {
   canvasWidth?: number;
 }
 
-const MIN_MARGIN = 100;
+/** 출처·각주를 캔버스 좌우 끝에서 얼마나 띄울지 */
+const EDGE_MARGIN = 10;
 
 export function drawSourceAndFootnote({
   ctx, plotX, plotW, height, source, sourceLeft, footnotes, fontSize, canvasWidth,
 }: SourceFootnoteParams) {
   ctx.save();
 
+  // 출처·연도는 오른쪽 **끝**, 각주는 왼쪽 **끝**에 붙인다 (2026-08-04 사용자 결정).
+  // 예전에는 플롯 영역에 맞춰 안쪽으로 들여써서 그림 가운데에 뜬 것처럼 보였다.
   let leftX = plotX;
   let rightX = plotX + plotW;
   if (canvasWidth != null) {
-    leftX = Math.max(plotX, MIN_MARGIN);
-    rightX = Math.min(plotX + plotW, canvasWidth - MIN_MARGIN);
+    leftX = EDGE_MARGIN;
+    rightX = canvasWidth - EDGE_MARGIN;
   }
 
   // 위에서 아래로: 출처 → 각주들.
@@ -91,7 +94,7 @@ export function drawSourceAndFootnote({
 
   // 각주는 왼쪽 끝에서 시작해 오른쪽으로 흐른다. 캔버스를 넘으면 잘리므로
   // 쓸 수 있는 폭을 미리 재 두고, 넘치는 글은 글꼴을 줄여 맞춘다.
-  const rightEdge = canvasWidth != null ? canvasWidth - 8 : plotX + plotW;
+  const rightEdge = canvasWidth != null ? rightX : plotX + plotW;
   const available = Math.max(0, rightEdge - leftX);
 
   if (source && !sourceBelow) {
