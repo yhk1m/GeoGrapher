@@ -60,6 +60,8 @@ interface SourceFootnoteParams {
   plotW: number;
   height: number;
   source: string;
+  /** 출처 줄 왼쪽에 함께 적는 글 (예: 자료 연도). 주면 출처 줄이 각주 아래로 내려간다. */
+  sourceLeft?: string;
   footnotes: string[];
   fontSize: number;
   canvasWidth?: number;
@@ -68,7 +70,7 @@ interface SourceFootnoteParams {
 const MIN_MARGIN = 100;
 
 export function drawSourceAndFootnote({
-  ctx, plotX, plotW, height, source, footnotes, fontSize, canvasWidth,
+  ctx, plotX, plotW, height, source, sourceLeft, footnotes, fontSize, canvasWidth,
 }: SourceFootnoteParams) {
   ctx.save();
 
@@ -79,18 +81,20 @@ export function drawSourceAndFootnote({
     rightX = Math.min(plotX + plotW, canvasWidth - MIN_MARGIN);
   }
 
-  // 위에서 아래로: 출처 → 각주들
+  // 위에서 아래로: 출처 → 각주들.
+  // 단 sourceLeft 를 주면 순서가 뒤집힌다 — 각주 아래에 "(연도) ... (출처)" 한 줄.
   const filtered = footnotes.filter((f) => f.trim());
   const totalFootnoteH = filtered.length * (fontSize * 0.9 + 4);
-  const sourceH = source ? fontSize + 4 : 0;
-  let y = height - 6 - totalFootnoteH;
+  const sourceH = (source || sourceLeft) ? fontSize + 4 : 0;
+  const sourceBelow = !!sourceLeft;
+  let y = height - 6 - totalFootnoteH - (sourceBelow ? sourceH : 0);
 
   // 각주는 왼쪽 끝에서 시작해 오른쪽으로 흐른다. 캔버스를 넘으면 잘리므로
   // 쓸 수 있는 폭을 미리 재 두고, 넘치는 글은 글꼴을 줄여 맞춘다.
   const rightEdge = canvasWidth != null ? canvasWidth - 8 : plotX + plotW;
   const available = Math.max(0, rightEdge - leftX);
 
-  if (source) {
+  if (source && !sourceBelow) {
     ctx.fillStyle = '#555';
     const makeFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
     const size = fitFontSize(ctx, source, fontSize, available, makeFont);
@@ -111,6 +115,24 @@ export function drawSourceAndFootnote({
     ctx.textBaseline = 'bottom';
     ctx.fillText(text, leftX, y, available > 0 ? available : undefined);
     y += fontSize * 0.9 + 4;
+  }
+
+  // 각주 아래 출처 줄 — 왼쪽에 자료 연도, 오른쪽에 출처 기관
+  if (sourceBelow) {
+    const makeFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
+    const half = available > 0 ? available / 2 : 0;
+    ctx.fillStyle = '#555';
+    ctx.textBaseline = 'bottom';
+
+    ctx.font = makeFont(fitFontSize(ctx, sourceLeft!, fontSize, half, makeFont));
+    ctx.textAlign = 'left';
+    ctx.fillText(sourceLeft!, leftX, height - 6, half > 0 ? half : undefined);
+
+    if (source) {
+      ctx.font = makeFont(fitFontSize(ctx, source, fontSize, half, makeFont));
+      ctx.textAlign = 'right';
+      ctx.fillText(source, rightX, height - 6, half > 0 ? half : undefined);
+    }
   }
 
   ctx.restore();

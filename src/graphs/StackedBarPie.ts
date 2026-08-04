@@ -1,9 +1,9 @@
 // © 2026 김용현
-import { type StackedGraphData, type GraphOptions } from '../data/types';
+import { type StackedGraphData, type StackedCategory, type GraphOptions } from '../data/types';
 import { type Padding, clearCanvas, getFont } from '../canvas/renderer';
 import { drawTitle, drawSourceAndFootnote } from '../canvas/labels';
 import { drawLegend, measureLegendWidth } from '../canvas/legend';
-import { getStackedFill, isLightFill } from '../canvas/patterns';
+import { getStackedFill, isLightFill, resolveFill, isLightFillValue } from '../canvas/patterns';
 
 export function renderStackedGraph(
   ctx: CanvasRenderingContext2D,
@@ -89,7 +89,7 @@ function renderStackedBar(
 
       if (v > 0 && v < 100) {
         ctx.save();
-        ctx.strokeStyle = '#ddd';
+        ctx.strokeStyle = data.gridColor ?? '#ddd';
         ctx.lineWidth = 0.5;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -113,20 +113,22 @@ function renderStackedBar(
       const cx = plotX + barArea * c + barArea / 2;
       const total = data.categories[c].values.reduce((a, b) => a + b, 0);
       let cumY = 0;
-      for (let s = 0; s < sCount; s++) {
+      for (const s of stackOrder(data.categories[c], sCount)) {
         const val = data.categories[c].values[s] || 0;
         const ratio = total > 0 ? val / total : 0;
         const barH = ratio * plotH;
         const y = plotY + plotH - cumY - barH;
 
-        ctx.fillStyle = getStackedFill(ctx, s);
+        ctx.fillStyle = fillOf(ctx, data, s);
         ctx.fillRect(cx - barW / 2, y, barW, barH);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 0.8;
         ctx.strokeRect(cx - barW / 2, y, barW, barH);
 
-        if (options.showDataLabels && barH > options.fontSize.dataLabel) {
-          ctx.fillStyle = isLightFill(s) ? '#000' : '#fff';
+        if (data.labelInSegment) {
+          drawSegmentLabel(ctx, data, options, s, cx, y + barH / 2, barW, barH, lightAt(data, s), font, customFont);
+        } else if (options.showDataLabels && barH > options.fontSize.dataLabel) {
+          ctx.fillStyle = lightAt(data, s) ? '#000' : '#fff';
           ctx.font = getFont(options.fontSize.dataLabel * 0.8, font, customFont, 'bold');
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -193,20 +195,20 @@ function renderStackedBar(
       const cy = plotY + barArea * c + barArea / 2;
       const total = data.categories[c].values.reduce((a, b) => a + b, 0);
       let cumX = 0;
-      for (let s = 0; s < sCount; s++) {
+      for (const s of stackOrder(data.categories[c], sCount)) {
         const val = data.categories[c].values[s] || 0;
         const ratio = total > 0 ? val / total : 0;
         const bw = ratio * plotW;
         const x = plotX + cumX;
 
-        ctx.fillStyle = getStackedFill(ctx, s);
+        ctx.fillStyle = fillOf(ctx, data, s);
         ctx.fillRect(x, cy - barH / 2, bw, barH);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 0.8;
         ctx.strokeRect(x, cy - barH / 2, bw, barH);
 
         if (options.showDataLabels && bw > options.fontSize.dataLabel * 2) {
-          ctx.fillStyle = isLightFill(s) ? '#000' : '#fff';
+          ctx.fillStyle = lightAt(data, s) ? '#000' : '#fff';
           ctx.font = getFont(options.fontSize.dataLabel * 0.8, font, customFont, 'bold');
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -231,8 +233,8 @@ function renderStackedBar(
   if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
-      fillStyle: getStackedFill(ctx, i),
-      bordered: isLightFill(i),
+      fillStyle: fillOf(ctx, data, i),
+      bordered: lightAt(data, i),
       label,
     }));
     drawLegend({
@@ -243,7 +245,7 @@ function renderStackedBar(
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, sourceLeft: options.sourceLeft, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
 }
 
 function renderPieChart(
@@ -315,7 +317,7 @@ function renderPieChart(
       const ratio = total > 0 ? val / total : 0;
       const endAngle = startAngle + ratio * Math.PI * 2;
 
-      ctx.fillStyle = getStackedFill(ctx, s);
+      ctx.fillStyle = fillOf(ctx, data, s);
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, maxR, startAngle, endAngle);
@@ -330,7 +332,7 @@ function renderPieChart(
         const midAngle = (startAngle + endAngle) / 2;
         const lx = cx + Math.cos(midAngle) * maxR * 0.65;
         const ly = cy + Math.sin(midAngle) * maxR * 0.65;
-        ctx.fillStyle = isLightFill(s) ? '#000' : '#fff';
+        ctx.fillStyle = lightAt(data, s) ? '#000' : '#fff';
         ctx.font = getFont(options.fontSize.dataLabel * 0.8, font, customFont, 'bold');
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -362,8 +364,8 @@ function renderPieChart(
   if (showLegend) {
     const items = data.seriesLabels.map((label, i) => ({
       type: 'rect' as const,
-      fillStyle: getStackedFill(ctx, i),
-      bordered: isLightFill(i),
+      fillStyle: fillOf(ctx, data, i),
+      bordered: lightAt(data, i),
       label,
     }));
     if (legendPos === 'right') {
@@ -396,5 +398,78 @@ function renderPieChart(
   }
 
   // 출처 + 각주
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, sourceLeft: options.sourceLeft, footnotes: options.footnotes, fontSize: options.fontSize.dataLabel, canvasWidth: w });
+}
+
+/** 이 막대의 쌓기 순서 (아래→위). 미지정이면 계열 번호 순. */
+function stackOrder(cat: StackedCategory, sCount: number): number[] {
+  const given = cat.segmentOrder;
+  if (!given || given.length === 0) {
+    return Array.from({ length: sCount }, (_, i) => i);
+  }
+  // 빠뜨린 계열이 있으면 뒤에 붙인다 — 값이 있는데 안 그려지면 안 된다
+  const rest = Array.from({ length: sCount }, (_, i) => i).filter((i) => !given.includes(i));
+  return [...given.filter((i) => i >= 0 && i < sCount), ...rest];
+}
+
+/** 계열 채움 — seriesFills 를 줬으면 그 값(색 또는 패턴), 아니면 기본 팔레트 */
+function fillOf(
+  ctx: CanvasRenderingContext2D,
+  data: StackedGraphData,
+  i: number
+): string | CanvasPattern {
+  const v = data.seriesFills?.[i];
+  return v === undefined || v === null ? getStackedFill(ctx, i) : resolveFill(ctx, v);
+}
+
+/** 그 채움 위에 검은 글자를 써도 읽히는가 */
+function lightAt(data: StackedGraphData, i: number): boolean {
+  const v = data.seriesFills?.[i];
+  return v === undefined || v === null ? isLightFill(i) : isLightFillValue(v);
+}
+
+/**
+ * 세그먼트 안에 계열 이름을 적는다.
+ *
+ * 패턴 위에서도 읽히도록 글자에 흰 테두리를 두르고, 어두운 채움 위에서는
+ * 흰 글자로 쓴다. 칸이 이름보다 좁으면 폭에 맞춰 눌러 넣는다.
+ */
+function drawSegmentLabel(
+  ctx: CanvasRenderingContext2D,
+  data: StackedGraphData,
+  options: GraphOptions,
+  s: number,
+  cx: number,
+  cy: number,
+  barW: number,
+  barH: number,
+  light: boolean,
+  font: 'serif' | 'sans' | 'custom',
+  customFont: string | undefined
+) {
+  const text = data.seriesLabels[s] ?? '';
+  const size = options.fontSize.dataLabel * 0.9;
+  // 칸이 글자보다 얇으면 적지 않는다 — 넘쳐서 옆 칸을 밟는 것보다 낫다
+  if (!text || barH < size * 1.1) return;
+
+  // 시험지 관습 — 기호(A·B)는 명조, 지명은 고딕
+  const family = data.seriesIsSymbol && !data.seriesIsSymbol[s] ? 'sans' : font;
+  ctx.font = getFont(size, family, customFont, 'bold');
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const maxW = Math.max(1, barW - 6);
+
+  if (light) {
+    // 패턴·연한 채움 위 — 흰 테두리를 둘러 글자를 띄운다
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fff';
+    ctx.lineJoin = 'round';
+    ctx.strokeText(text, cx, cy, maxW);
+    ctx.restore();
+    ctx.fillStyle = '#000';
+  } else {
+    ctx.fillStyle = '#fff';
+  }
+  ctx.fillText(text, cx, cy, maxW);
 }
