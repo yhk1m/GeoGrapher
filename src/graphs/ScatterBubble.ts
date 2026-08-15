@@ -40,9 +40,20 @@ function renderNormal(
   const fillM = outsideLegend ? measureFillLegend(ctx, data, fs, font, cf) : { boxW: 0, boxH: 0 };
   const legendW = Math.max(bubbleM?.boxW ?? 0, fillM.boxW);
 
+  // 시험지 틀은 x축 단위를 마지막 눈금 **옆**에 두므로 그만큼 오른쪽이 더 필요하다.
+  // 60px 고정으로 두면 `(℃)` 가 캔버스 밖으로 밀린다.
+  const examUnitW = (() => {
+    if (data.examFrame !== true || !data.xUnit) return 0;
+    ctx.save();
+    ctx.font = getFont(fs.tick, font, cf, 'bold');
+    const width = ctx.measureText(data.xUnit).width;
+    ctx.restore();
+    return width;
+  })();
+
   const padding: Padding = {
     top: options.title ? 100 : 50,
-    right: legendW > 0 ? legendW + 40 : 60,
+    right: legendW > 0 ? legendW + 40 : Math.max(60, examUnitW + 34),
     bottom: (() => {
       let b = 90;
       const notes = options.footnotes.filter(f => f.trim()).length;
@@ -121,6 +132,10 @@ function renderNormal(
     plotW / Math.max(1, xTicks.length - 1),
     widestLabel(ctx, xTicks.map(formatTick)),
   );
+  // 눈금 숫자는 가운데 정렬이라 마지막 것이 플롯 오른쪽 밖으로 절반 삐져나온다.
+  // 시험지 틀의 x축 단위를 그 옆에 놓으려면 **실제로 그려진** 마지막 숫자의
+  // 오른쪽 끝을 알아야 한다 (`30` 과 `(℃)` 가 겹치던 원인).
+  let lastXLabelRight = plotX + plotW;
   xTicks.forEach((v, i) => {
     const x = toCanvasX(v);
     ctx.lineWidth = 1;
@@ -128,7 +143,11 @@ function renderNormal(
     ctx.moveTo(x, plotY + plotH);
     ctx.lineTo(x, plotY + plotH + 6);
     ctx.stroke();
-    if (i % xStride === 0) ctx.fillText(formatTick(v), x, plotY + plotH + 10);
+    if (i % xStride === 0) {
+      const text = formatTick(v);
+      ctx.fillText(text, x, plotY + plotH + 10);
+      lastXLabelRight = Math.max(lastXLabelRight, x + ctx.measureText(text).width / 2);
+    }
   });
 
   // Y축 눈금
@@ -164,7 +183,8 @@ function renderNormal(
       ctx.font = getFont(fs.tick, font, cf, 'bold');
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText(data.xUnit, plotX + plotW + 4, plotY + plotH + 10);
+      // 마지막 눈금 숫자 오른쪽 끝에서 한 칸 띄운다
+      ctx.fillText(data.xUnit, lastXLabelRight + 6, plotY + plotH + 10);
       ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
     } else {
       ctx.textAlign = 'right';
