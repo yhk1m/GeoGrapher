@@ -45,8 +45,10 @@ function renderNormal(
     right: legendW > 0 ? legendW + 40 : 60,
     bottom: (() => {
       let b = 90;
-      if (options.source) b += 30;
-      b += options.footnotes.filter(f => f.trim()).length * 22;
+      const notes = options.footnotes.filter(f => f.trim()).length;
+      // 출처를 각주와 같은 줄에 두면(sourceInline) 줄이 하나 줄어든다
+      if (options.source && !(options.sourceInline && notes > 0)) b += 30;
+      b += notes * 22;
       return b;
     })(),
     left: 130,
@@ -72,11 +74,12 @@ function renderNormal(
   const toCanvasX = (v: number) => plotX + ((v - xMin) / (xMax - xMin)) * plotW;
   const toCanvasY = (v: number) => plotY + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
 
-  // 격자선
+  // 격자선 — 시험지 틀이면 진한 점선이다
+  const exam = data.examFrame === true;
   ctx.save();
-  ctx.strokeStyle = '#ddd';
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = exam ? '#333' : '#ddd';
+  ctx.lineWidth = exam ? 1 : 0.5;
+  ctx.setLineDash(exam ? [5, 4] : [3, 3]);
   for (let v = xMin + xStep; v < xMax; v += xStep) {
     const x = toCanvasX(v);
     ctx.beginPath();
@@ -93,14 +96,18 @@ function renderNormal(
   }
   ctx.restore();
 
-  // 축선
+  // 축선 — 시험지 틀이면 사각 테두리로 감싼다
   ctx.strokeStyle = '#000';
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(plotX, plotY);
-  ctx.lineTo(plotX, plotY + plotH);
-  ctx.lineTo(plotX + plotW, plotY + plotH);
-  ctx.stroke();
+  if (exam) {
+    ctx.strokeRect(plotX, plotY, plotW, plotH);
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(plotX, plotY);
+    ctx.lineTo(plotX, plotY + plotH);
+    ctx.lineTo(plotX + plotW, plotY + plotH);
+    ctx.stroke();
+  }
 
   // X축 눈금
   ctx.fillStyle = '#000';
@@ -150,11 +157,20 @@ function renderNormal(
   ctx.textBaseline = 'top';
   ctx.fillText(data.xLabel, plotX + plotW / 2, plotY + plotH + 40);
 
-  // X축 단위 (우측 끝, 라벨과 같은 높이)
+  // X축 단위 — 시험지 틀이면 마지막 눈금 옆(`4(℃)` 꼴),
+  // 아니면 기존대로 축 이름과 같은 줄 오른쪽 끝
   if (data.xUnit) {
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'top';
-    ctx.fillText(data.xUnit, plotX + plotW + 10, plotY + plotH + 40);
+    if (exam) {
+      ctx.font = getFont(fs.tick, font, cf, 'bold');
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(data.xUnit, plotX + plotW + 4, plotY + plotH + 10);
+      ctx.font = getFont(fs.axisLabel, font, cf, 'bold');
+    } else {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(data.xUnit, plotX + plotW + 10, plotY + plotH + 40);
+    }
   }
 
   // Y축 단위 (상단 끝)
@@ -191,7 +207,7 @@ function renderNormal(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, sourceInline: options.sourceInline, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 편차 산점도 ───────────────────────────────────────
@@ -214,8 +230,10 @@ function renderDeviation(
     right: data.boxedAxisLabels ? 170 : 80,
     bottom: (() => {
       let b = 90;
-      if (options.source) b += 30;
-      b += options.footnotes.filter(f => f.trim()).length * 22;
+      const notes = options.footnotes.filter(f => f.trim()).length;
+      // 출처를 각주와 같은 줄에 두면(sourceInline) 줄이 하나 줄어든다
+      if (options.source && !(options.sourceInline && notes > 0)) b += 30;
+      b += notes * 22;
       return b;
     })(),
     left: 130,
@@ -401,7 +419,7 @@ function renderDeviation(
   }
 
   drawTitle({ ctx, plotX, plotW, title: options.title, fontSize: fs.title, canvasWidth: w });
-  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
+  drawSourceAndFootnote({ ctx, plotX, plotW, height: h, source: options.source, sourceInline: options.sourceInline, footnotes: options.footnotes, fontSize: fs.dataLabel, canvasWidth: w });
 }
 
 // ── 공통 유틸 ─────────────────────────────────────────

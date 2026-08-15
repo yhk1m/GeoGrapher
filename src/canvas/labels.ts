@@ -62,6 +62,8 @@ interface SourceFootnoteParams {
   source: string;
   /** 출처 줄 왼쪽에 함께 적는 글 (예: 자료 연도). 주면 출처 줄이 각주 아래로 내려간다. */
   sourceLeft?: string;
+  /** 출처를 마지막 각주와 같은 줄 오른쪽 끝에 둔다 (시험지 관습) */
+  sourceInline?: boolean;
   footnotes: string[];
   fontSize: number;
   canvasWidth?: number;
@@ -71,7 +73,7 @@ interface SourceFootnoteParams {
 const EDGE_MARGIN = 10;
 
 export function drawSourceAndFootnote({
-  ctx, plotX, plotW, height, source, sourceLeft, footnotes, fontSize, canvasWidth,
+  ctx, plotX, plotW, height, source, sourceLeft, sourceInline, footnotes, fontSize, canvasWidth,
 }: SourceFootnoteParams) {
   ctx.save();
 
@@ -88,8 +90,11 @@ export function drawSourceAndFootnote({
   // 단 sourceLeft 를 주면 순서가 뒤집힌다 — 각주 아래에 "(연도) ... (출처)" 한 줄.
   const filtered = footnotes.filter((f) => f.trim());
   const totalFootnoteH = filtered.length * (fontSize * 0.9 + 4);
-  const sourceH = (source || sourceLeft) ? fontSize + 4 : 0;
   const sourceBelow = !!sourceLeft;
+  // 시험지 관습 — 출처를 마지막 각주와 **같은 줄** 오른쪽 끝에 둔다.
+  // 각주가 없으면 놓을 줄이 없으므로 기존 배치를 그대로 쓴다.
+  const inlineSource = !!sourceInline && !!source && !sourceBelow && filtered.length > 0;
+  const sourceH = (source || sourceLeft) && !inlineSource ? fontSize + 4 : 0;
   let y = height - 6 - totalFootnoteH - (sourceBelow ? sourceH : 0);
 
   // 각주는 왼쪽 끝에서 시작해 오른쪽으로 흐른다. 캔버스를 넘으면 잘리므로
@@ -97,27 +102,45 @@ export function drawSourceAndFootnote({
   const rightEdge = canvasWidth != null ? rightX : plotX + plotW;
   const available = Math.max(0, rightEdge - leftX);
 
-  if (source && !sourceBelow) {
+  const sourceFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
+
+  if (source && !sourceBelow && !inlineSource) {
     ctx.fillStyle = '#555';
-    const makeFont = (size: number) => `bold ${size}px ${LABEL_FONT}`;
-    const size = fitFontSize(ctx, source, fontSize, available, makeFont);
-    ctx.font = makeFont(size);
+    const size = fitFontSize(ctx, source, fontSize, available, sourceFont);
+    ctx.font = sourceFont(size);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText(source, rightX, y, available > 0 ? available : undefined);
     y += sourceH;
   }
 
+  // 같은 줄에 출처가 들어오면 각주가 쓸 수 있는 폭이 그만큼 줄어든다
+  ctx.font = sourceFont(fontSize);
+  const inlineSourceW = inlineSource ? ctx.measureText(source).width + 16 : 0;
+  const footnoteAvailable = Math.max(0, available - inlineSourceW);
+
+  let lastFootnoteY = y;
   for (let i = 0; i < filtered.length; i++) {
     const text = '* ' + filtered[i];
     ctx.fillStyle = '#555';
     const makeFont = (size: number) => `${size}px ${LABEL_FONT}`;
-    const size = fitFontSize(ctx, text, fontSize * 0.9, available, makeFont);
+    const size = fitFontSize(ctx, text, fontSize * 0.9, footnoteAvailable, makeFont);
     ctx.font = makeFont(size);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(text, leftX, y, available > 0 ? available : undefined);
+    ctx.fillText(text, leftX, y, footnoteAvailable > 0 ? footnoteAvailable : undefined);
+    lastFootnoteY = y;
     y += fontSize * 0.9 + 4;
+  }
+
+  // 마지막 각주와 같은 줄, 오른쪽 끝
+  if (inlineSource) {
+    ctx.fillStyle = '#555';
+    const size = fitFontSize(ctx, source, fontSize, inlineSourceW, sourceFont);
+    ctx.font = sourceFont(size);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(source, rightX, lastFootnoteY, inlineSourceW > 0 ? inlineSourceW : undefined);
   }
 
   // 각주 아래 출처 줄 — 왼쪽에 자료 연도, 오른쪽에 출처 기관
