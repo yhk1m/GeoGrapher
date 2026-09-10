@@ -1,6 +1,6 @@
 // © 2026 김용현
 import { useRef, useEffect, useCallback } from 'react';
-import { type GraphType, type ClimateMode, type ClimateGraphData, type DeviationAData, type DeviationBData, type PyramidGraphData, type TernaryGraphData, type StackedGraphData, type AbsBarGraphData, type ScatterGraphData, type HythergraphData, type CubeGraphData, type RadarGraphData, type GraphOptions } from '../data/types';
+import { type GraphType, type ClimateMode, type ClimateGraphData, type DeviationAData, type DeviationBData, type PyramidGraphData, type TernaryGraphData, type StackedGraphData, type AbsBarGraphData, type LineGraphData, type ScatterGraphData, type HythergraphData, type CubeGraphData, type RadarGraphData, type GraphOptions } from '../data/types';
 import { renderClimateGraph } from '../graphs/ClimateGraph';
 import { renderDeviationAGraph } from '../graphs/DeviationAGraph';
 import { renderDeviationBGraph } from '../graphs/DeviationBGraph';
@@ -8,6 +8,7 @@ import { renderPyramidGraph } from '../graphs/PopulationPyramid';
 import { renderTernaryGraph } from '../graphs/TernaryDiagram';
 import { renderStackedGraph } from '../graphs/StackedBarPie';
 import { renderAbsBarGraph } from '../graphs/AbsBarGraph';
+import { renderLineGraph } from '../graphs/LineGraph';
 import { renderScatterGraph } from '../graphs/ScatterBubble';
 import { renderHythergraph } from '../graphs/Hythergraph';
 import { renderCubeGraph } from '../graphs/CubeGraph';
@@ -23,6 +24,7 @@ interface GraphCanvasProps {
   ternaryData: TernaryGraphData;
   stackedData: StackedGraphData;
   absBarData: AbsBarGraphData;
+  lineData: LineGraphData;
   scatterData: ScatterGraphData;
   hythergraphData: HythergraphData;
   cubeData: CubeGraphData;
@@ -30,7 +32,7 @@ interface GraphCanvasProps {
   options: GraphOptions;
 }
 
-export default function GraphCanvas({ graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, scatterData, hythergraphData, cubeData, radarData, options }: GraphCanvasProps) {
+export default function GraphCanvas({ graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData, options }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -69,6 +71,8 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
       renderStackedGraph(ctx, displayW, displayH, stackedData, options);
     } else if (graphType === 'absbar') {
       renderAbsBarGraph(ctx, displayW, displayH, absBarData, options);
+    } else if (graphType === 'line') {
+      renderLineGraph(ctx, displayW, displayH, lineData, options);
     } else if (graphType === 'scatter') {
       renderScatterGraph(ctx, displayW, displayH, scatterData, options);
     } else if (graphType === 'hythergraph') {
@@ -86,7 +90,7 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
       ctx.textBaseline = 'middle';
       ctx.fillText('이 그래프 유형은 아직 준비 중입니다.', displayW / 2, displayH / 2);
     }
-  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, scatterData, hythergraphData, cubeData, radarData, options]);
+  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData, options]);
 
   useEffect(() => {
     render();

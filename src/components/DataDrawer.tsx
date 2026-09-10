@@ -9,6 +9,7 @@ import {
   type TernaryGraphData,
   type StackedGraphData,
   type AbsBarGraphData,
+  type LineGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -48,6 +49,8 @@ interface DataDrawerProps {
   onStackedDataChange: (data: StackedGraphData) => void;
   absBarData: AbsBarGraphData;
   onAbsBarDataChange: (data: AbsBarGraphData) => void;
+  lineData: LineGraphData;
+  onLineDataChange: (data: LineGraphData) => void;
   scatterData: ScatterGraphData;
   onScatterDataChange: (data: ScatterGraphData) => void;
   hythergraphData: HythergraphData;
@@ -85,6 +88,8 @@ export default function DataDrawer({
   onStackedDataChange,
   absBarData,
   onAbsBarDataChange,
+  lineData,
+  onLineDataChange,
   scatterData,
   onScatterDataChange,
   hythergraphData,
@@ -96,6 +101,8 @@ export default function DataDrawer({
   options,
   onOptionsChange,
 }: DataDrawerProps) {
+  // Task 5(LineInput) 까지 임시 — 지울 것
+  void lineData; void onLineDataChange;
   const heading = graphType === 'climate'
     ? climateMode === 'normal' ? GRAPH_LABELS.climate : climateMode === 'deviationA' ? '월별 편차 그래프' : '지역별 편차 그래프'
     : GRAPH_LABELS[graphType];
@@ -154,6 +161,16 @@ export default function DataDrawer({
           placeholder="출처 입력"
           style={styles.input}
         />
+        {(graphType === 'scatter' || graphType === 'line') && (
+          <label style={{ ...styles.toggleRow, marginTop: 6 }}>
+            <span>출처를 마지막 각주 줄에 (시험지 관습)</span>
+            <input
+              type="checkbox"
+              checked={options.sourceInline ?? false}
+              onChange={(e) => onOptionsChange({ ...options, sourceInline: e.target.checked })}
+            />
+          </label>
+        )}
         <div style={{ ...styles.label, marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>각주</span>
           <div style={{ display: 'flex', gap: 4 }}>
@@ -311,7 +328,7 @@ export default function DataDrawer({
       {graphType === 'radar' && (
         <RadarInput data={radarData} onChange={onRadarDataChange} />
       )}
-      {graphType !== 'climate' && graphType !== 'pyramid' && graphType !== 'ternary' && graphType !== 'stacked' && graphType !== 'absbar' && graphType !== 'scatter' && graphType !== 'hythergraph' && graphType !== 'cube' && graphType !== 'radar' && (
+      {graphType !== 'climate' && graphType !== 'pyramid' && graphType !== 'ternary' && graphType !== 'stacked' && graphType !== 'absbar' && graphType !== 'line' && graphType !== 'scatter' && graphType !== 'hythergraph' && graphType !== 'cube' && graphType !== 'radar' && (
         <div style={styles.placeholder}>
           이 그래프 유형은 아직 준비 중입니다.
         </div>

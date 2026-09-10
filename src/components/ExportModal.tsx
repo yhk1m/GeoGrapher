@@ -11,6 +11,7 @@ import {
   type TernaryGraphData,
   type StackedGraphData,
   type AbsBarGraphData,
+  type LineGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -25,6 +26,7 @@ import { renderPyramidGraph } from '../graphs/PopulationPyramid';
 import { renderTernaryGraph } from '../graphs/TernaryDiagram';
 import { renderStackedGraph } from '../graphs/StackedBarPie';
 import { renderAbsBarGraph } from '../graphs/AbsBarGraph';
+import { renderLineGraph } from '../graphs/LineGraph';
 import { renderScatterGraph } from '../graphs/ScatterBubble';
 import { renderHythergraph } from '../graphs/Hythergraph';
 import { renderCubeGraph } from '../graphs/CubeGraph';
@@ -42,6 +44,7 @@ interface ExportModalProps {
   ternaryData: TernaryGraphData;
   stackedData: StackedGraphData;
   absBarData: AbsBarGraphData;
+  lineData: LineGraphData;
   scatterData: ScatterGraphData;
   hythergraphData: HythergraphData;
   cubeData: CubeGraphData;
@@ -62,6 +65,7 @@ export default function ExportModal({
   ternaryData,
   stackedData,
   absBarData,
+  lineData,
   scatterData,
   hythergraphData,
   cubeData,
@@ -85,6 +89,8 @@ export default function ExportModal({
         renderStackedGraph(ctx, w, h, stackedData, options);
       } else if (graphType === 'absbar') {
         renderAbsBarGraph(ctx, w, h, absBarData, options);
+      } else if (graphType === 'line') {
+        renderLineGraph(ctx, w, h, lineData, options);
       } else if (graphType === 'scatter') {
         renderScatterGraph(ctx, w, h, scatterData, options);
       } else if (graphType === 'hythergraph') {
@@ -95,7 +101,7 @@ export default function ExportModal({
         renderRadarChart(ctx, w, h, radarData, options);
       }
     };
-  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, scatterData, hythergraphData, cubeData, radarData, options]);
+  }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData, options]);
 
   const isMapExport = graphType === 'choropleth' || graphType === 'symbolmap' || graphType === 'isoline' || graphType === 'flowmap';
   const mapSvgId =

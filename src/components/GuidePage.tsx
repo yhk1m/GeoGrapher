@@ -70,6 +70,15 @@ export default function GuidePage({ onNavigate }: Props) {
             </p>
           </div>
 
+          <div style={styles.card} onClick={() => onNavigate('line')}>
+            <h3 style={styles.cardTitle}>꺾은선 그래프</h3>
+            <p style={styles.cardDesc}>
+              연도·월별 추이를 꺾은선으로 그립니다. 계열은 <strong>선 종류(실선/파선/점선/일점쇄선)·굵기·회색</strong>과 기호로 구분하고,
+              계열 이름은 <strong>선 끝·유도선·범례</strong> 중에서 고릅니다. x 이름을 비우면 그 자리의 라벨과 세로 격자를 건너뛰어
+              5년 자료에 10년 라벨을 다는 시험지 관습을 재현할 수 있습니다.
+            </p>
+          </div>
+
           <div style={styles.card} onClick={() => onNavigate('scatter')}>
             <h3 style={styles.cardTitle}>산점도/버블 차트</h3>
             <p style={styles.cardDesc}>

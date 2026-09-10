@@ -20,6 +20,7 @@ import {
   type TernaryGraphData,
   type StackedGraphData,
   type AbsBarGraphData,
+  type LineGraphData,
   type ScatterGraphData,
   type HythergraphData,
   type CubeGraphData,
@@ -33,6 +34,7 @@ import {
   createDefaultTernaryData,
   createDefaultStackedData,
   createDefaultAbsBarData,
+  createDefaultLineData,
   createDefaultScatterData,
   createDefaultHythergraphData,
   createDefaultCubeData,
@@ -54,6 +56,7 @@ export default function App() {
   const [ternaryData, setTernaryData] = useState<TernaryGraphData>(createDefaultTernaryData);
   const [stackedData, setStackedData] = useState<StackedGraphData>(createDefaultStackedData);
   const [absBarData, setAbsBarData] = useState<AbsBarGraphData>(createDefaultAbsBarData);
+  const [lineData, setLineData] = useState<LineGraphData>(createDefaultLineData);
   const [scatterData, setScatterData] = useState<ScatterGraphData>(createDefaultScatterData);
   const [hythergraphData, setHythergraphData] = useState<HythergraphData>(createDefaultHythergraphData);
   const [cubeData, setCubeData] = useState<CubeGraphData>(createDefaultCubeData);
@@ -103,6 +106,7 @@ export default function App() {
               ternaryData={ternaryData}
               stackedData={stackedData}
               absBarData={absBarData}
+              lineData={lineData}
               scatterData={scatterData}
               hythergraphData={hythergraphData}
               cubeData={cubeData}
@@ -128,6 +132,8 @@ export default function App() {
               onStackedDataChange={setStackedData}
               absBarData={absBarData}
               onAbsBarDataChange={setAbsBarData}
+              lineData={lineData}
+              onLineDataChange={setLineData}
               scatterData={scatterData}
               onScatterDataChange={setScatterData}
               hythergraphData={hythergraphData}
@@ -155,6 +161,7 @@ export default function App() {
           ternaryData={ternaryData}
           stackedData={stackedData}
           absBarData={absBarData}
+          lineData={lineData}
           scatterData={scatterData}
           hythergraphData={hythergraphData}
           cubeData={cubeData}
