@@ -8,6 +8,7 @@ const TYPE_NAMES: Record<GraphType, string> = {
   ternary: 'ternary',
   stacked: 'stacked',
   absbar: 'absbar',
+  line: 'line',
   scatter: 'scatter',
   hythergraph: 'hythergraph',
   cube: 'cube',
