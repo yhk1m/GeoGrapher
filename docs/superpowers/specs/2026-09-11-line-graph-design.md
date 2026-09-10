@@ -74,7 +74,7 @@ GeoGrapher 기본값 `createDefaultLineData()`: 계열 1개 `(가)`, x `1990·19
 ## 4. 렌더러 동작
 
 - **선**: `stroke`·`lineWidth` 를 계열마다 반영. 범례 상자(`legend` 모드) 항목도 같은 색·굵기·대시로 그린다 (`LegendItem.strokeStyle`·`lineWidth`·`dash`).
-- **세로 격자**: `xGrid` 이면 `xLabels[i] !== ''` 이고 `0 < i < n-1` 인 x 에 `gridColor` 점선(`[4,4]`, 0.5px — 가로 격자와 같은 스타일).
+- **세로 격자**: `xGrid` 이면 **라벨이 실제로 그려지는 자리**(빈 이름이 아니고 `labelStride` 도 통과) 중 `0 < i < n-1` 인 x 에 `gridColor` 점선(`[4,4]`, 0.5px — 가로 격자와 같은 스타일). 라벨과 격자가 늘 같은 자리에 놓인다.
 - **가로 격자 색**: `drawYAxis` 에 `gridColor?: string` 인자를 추가(기본 `#ccc`)하고 꺾은선이 넘긴다.
 - **x 라벨**: 빈 문자열은 건너뛴다. 기존 자동 걸러 그리기(`labelStride`)는 그대로 — `i % stride === 0` 이고 라벨이 비지 않았을 때만 그린다. `widestLabel` 은 빈 라벨을 빼고 잰다.
 - **유도선 라벨**(`labelPlacement: 'leader'`): 계열마다 `leader` 를 읽어 점 `(toX(at), toY(v[at]))` 에서 `(dx, dy)` 만큼 떨어진 곳에 이름을 가운데 정렬로 쓴다. 라벨 상자(글자 폭·높이에 여백 2px) 가장자리에서 점을 향해 1px 검정 실선을 긋되 점 3px 앞에서 멈춘다. `at` 의 값이 `null` 이면 값이 있는 가장 가까운 점으로 바꾼다. 오른쪽 여백은 `lineEnd` 때와 달리 추가로 확보하지 않는다.
