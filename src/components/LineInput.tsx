@@ -74,10 +74,16 @@ export default function LineInput({ data, onChange }: Props) {
 
   const removeRow = () => {
     if (n <= 2) return;
+    const last = n - 2;
     onChange({
       ...data,
       xLabels: data.xLabels.slice(0, -1),
-      series: data.series.map((s) => ({ ...s, values: s.values.slice(0, -1) })),
+      // 지운 행을 가리키던 유도선은 마지막 행으로 당긴다 — 렌더러의 클램프와 같은 규칙
+      series: data.series.map((s) => ({
+        ...s,
+        values: s.values.slice(0, -1),
+        leader: s.leader && s.leader.at > last ? { ...s.leader, at: last } : s.leader,
+      })),
     });
   };
 
@@ -241,7 +247,7 @@ export default function LineInput({ data, onChange }: Props) {
             <div key={i} style={styles.leaderRow}>
               <span style={styles.leaderName}>{s.label}</span>
               <select
-                value={leader.at}
+                value={Math.min(n - 1, Math.max(0, leader.at))}
                 onChange={(e) => updateSeries(i, { leader: { ...leader, at: Number(e.target.value) } })}
                 style={styles.select}
                 title="가리킬 점"
