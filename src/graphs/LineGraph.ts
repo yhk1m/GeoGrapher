@@ -165,11 +165,18 @@ export function renderLineGraph(
   const toX = (i: number) => plotX + stepX * i;
   const toY = (v: number) => plotY + plotH - ((v - axis.min) / (axis.max - axis.min)) * plotH;
 
-  // x 라벨을 어느 자리에 그리는가 — 빈 이름은 건너뛰고, 서로 붙으면 몇 개 걸러 그린다.
+  // x 라벨을 어느 자리에 그리는가 — 빈 이름은 건너뛰고, 이름끼리 서로 붙으면 몇 개 걸러 그린다.
+  // 걸러내기는 **이름이 있는 자리들 사이의 간격**으로 판단한다. 칸 간격으로 재면 빈
+  // 이름이 섞인 5년 자료·10년 라벨에서 이름 있는 자리까지 엉뚱하게 빠진다.
   // 세로 격자도 **같은 자리**에만 긋는다 (라벨과 격자가 늘 함께 간다).
   ctx.font = getFont(options.fontSize.tick, font, customFont, 'bold');
-  const xStride = labelStride(stepX, widestLabel(ctx, data.xLabels));
-  const labelShown = (i: number) => data.xLabels[i] !== '' && i % xStride === 0;
+  const named = data.xLabels.flatMap((l, i) => (l !== '' ? [i] : []));
+  const namedGap = named.length > 1
+    ? Math.min(...named.slice(1).map((v, k) => v - named[k]))
+    : 1;
+  const xStride = labelStride(stepX * namedGap, widestLabel(ctx, data.xLabels));
+  const shownSet = new Set(named.filter((_, k) => k % xStride === 0));
+  const labelShown = (i: number) => shownSet.has(i);
 
   // 세로 격자 — 선보다 먼저 그려야 선이 위에 남는다
   if (data.xGrid) {
@@ -323,10 +330,12 @@ export function renderLineGraph(
     data.series.forEach((s, si) => {
       const top = tops[si];
       const leader = s.leader ?? defaultLineLeader(n);
-      // 가리킬 점에 값이 없으면 값이 있는 가장 가까운 점으로 옮긴다
+      // 가리킬 점 번호가 범위를 벗어나면(행을 지운 뒤 등) 끝으로 당기고,
+      // 그 점에 값이 없으면 값이 있는 가장 가까운 점으로 옮긴다
+      const start = Math.min(n - 1, Math.max(0, Math.round(leader.at)));
       let at = -1;
       for (let d = 0; d < n && at < 0; d++) {
-        for (const k of [leader.at - d, leader.at + d]) {
+        for (const k of [start - d, start + d]) {
           if (k >= 0 && k < n && top[k] !== null) { at = k; break; }
         }
       }
@@ -416,7 +425,7 @@ export function renderLineGraph(
       type: 'line',
       fillStyle: s.stroke ?? '#000',
       strokeStyle: s.stroke ?? '#000',
-      lineWidth: s.lineWidth,
+      lineWidth: s.lineWidth ?? 2,
       label: s.label,
       dash: LINE_DASH[s.lineStyle ?? LINE_STYLE_ORDER[si % LINE_STYLE_ORDER.length]],
     }));
