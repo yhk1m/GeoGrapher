@@ -35,8 +35,11 @@ const PLACEMENT_LABELS: Record<LineLabelPlacement, string> = {
 };
 const SERIES_NAMES = ['(가)', '(나)', '(다)', '(라)', '(마)', '(바)'];
 const MAX_SERIES = 6;
+// 「격자 진하게」는 색과 굵기를 함께 바꾼다 — 시험지 점선은 진하고 1px 쯤이다
 const DARK_GRID = '#555';
 const LIGHT_GRID = '#ccc';
+const DARK_GRID_WIDTH = 1;
+const LIGHT_GRID_WIDTH = 0.5;
 
 export default function LineInput({ data, onChange }: Props) {
   const n = data.xLabels.length;
@@ -325,7 +328,11 @@ export default function LineInput({ data, onChange }: Props) {
             <input
               type="checkbox"
               checked={(data.gridColor ?? LIGHT_GRID) === DARK_GRID}
-              onChange={(e) => onChange({ ...data, gridColor: e.target.checked ? DARK_GRID : LIGHT_GRID })}
+              onChange={(e) => onChange({
+                ...data,
+                gridColor: e.target.checked ? DARK_GRID : LIGHT_GRID,
+                gridWidth: e.target.checked ? DARK_GRID_WIDTH : LIGHT_GRID_WIDTH,
+              })}
             />
             <span>격자 진하게</span>
           </label>
