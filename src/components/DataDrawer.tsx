@@ -29,6 +29,7 @@ import ScatterInput from './ScatterInput';
 import HythergraphInput from './HythergraphInput';
 import CubeInput from './CubeInput';
 import RadarInput from './RadarInput';
+import LineInput from './LineInput';
 
 interface DataDrawerProps {
   open: boolean;
@@ -101,8 +102,6 @@ export default function DataDrawer({
   options,
   onOptionsChange,
 }: DataDrawerProps) {
-  // Task 5(LineInput) 까지 임시 — 지울 것
-  void lineData; void onLineDataChange;
   const heading = graphType === 'climate'
     ? climateMode === 'normal' ? GRAPH_LABELS.climate : climateMode === 'deviationA' ? '월별 편차 그래프' : '지역별 편차 그래프'
     : GRAPH_LABELS[graphType];
@@ -315,6 +314,9 @@ export default function DataDrawer({
       )}
       {graphType === 'absbar' && (
         <AbsBarInput data={absBarData} onChange={onAbsBarDataChange} />
+      )}
+      {graphType === 'line' && (
+        <LineInput data={lineData} onChange={onLineDataChange} />
       )}
       {graphType === 'scatter' && (
         <ScatterInput data={scatterData} onChange={onScatterDataChange} />
