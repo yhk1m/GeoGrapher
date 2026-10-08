@@ -31,7 +31,7 @@ const STROKES: { label: string; value: string }[] = [
   { label: '회색', value: '#999' },
 ];
 const PLACEMENT_LABELS: Record<LineLabelPlacement, string> = {
-  lineEnd: '선 끝', leader: '유도선', legend: '범례',
+  lineEnd: '선 끝', leader: '유도선', rightLeader: '오른쪽 줄', legend: '범례',
 };
 const SERIES_NAMES = ['(가)', '(나)', '(다)', '(라)', '(마)', '(바)'];
 const MAX_SERIES = 6;
@@ -227,7 +227,7 @@ export default function LineInput({ data, onChange }: Props) {
       <section style={styles.section}>
         <label style={styles.label}>계열 이름 표시</label>
         <div style={styles.modeGroup}>
-          {(['lineEnd', 'leader', 'legend'] as LineLabelPlacement[]).map((p) => (
+          {(['lineEnd', 'leader', 'rightLeader', 'legend'] as LineLabelPlacement[]).map((p) => (
             <button
               key={p}
               onClick={() => onChange({ ...data, labelPlacement: p })}
@@ -243,6 +243,9 @@ export default function LineInput({ data, onChange }: Props) {
         </div>
         {data.labelPlacement === 'legend' && (
           <p style={styles.hint}>범례 상자는 위 공통 옵션의 「범례 표시」·「범례 위치」를 따릅니다.</p>
+        )}
+        {data.labelPlacement === 'rightLeader' && (
+          <p style={styles.hint}>이름을 그래프 오른쪽 바깥에 한 줄로 세우고, 선 끝에서 유도선으로 잇습니다.</p>
         )}
         {data.labelPlacement === 'leader' && data.series.map((s, i) => {
           const leader = leaderOf(s);
@@ -296,6 +299,22 @@ export default function LineInput({ data, onChange }: Props) {
             placeholder="(%)"
             style={{ ...styles.cellInput, width: 64, textAlign: 'center' }}
           />
+        </div>
+        <label style={{ ...styles.label, marginTop: 8 }}>틀</label>
+        <div style={styles.modeGroup}>
+          {(['closed', 'open'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => onChange({ ...data, frame: f })}
+              style={{
+                ...styles.modeBtn,
+                background: (data.frame ?? 'closed') === f ? '#1B2A4A' : '#fff',
+                color: (data.frame ?? 'closed') === f ? '#fff' : '#374151',
+              }}
+            >
+              {f === 'closed' ? '닫힌 틀(사각)' : '열린 틀(L자)'}
+            </button>
+          ))}
         </div>
         <label style={{ ...styles.toggleRow, marginTop: 8 }}>
           <input

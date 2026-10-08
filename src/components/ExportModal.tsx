@@ -19,18 +19,7 @@ import {
   type GraphOptions,
 } from '../data/types';
 import { exportCanvasToPNG } from '../canvas/export';
-import { renderClimateGraph } from '../graphs/ClimateGraph';
-import { renderDeviationAGraph } from '../graphs/DeviationAGraph';
-import { renderDeviationBGraph } from '../graphs/DeviationBGraph';
-import { renderPyramidGraph } from '../graphs/PopulationPyramid';
-import { renderTernaryGraph } from '../graphs/TernaryDiagram';
-import { renderStackedGraph } from '../graphs/StackedBarPie';
-import { renderAbsBarGraph } from '../graphs/AbsBarGraph';
-import { renderLineGraph } from '../graphs/LineGraph';
-import { renderScatterGraph } from '../graphs/ScatterBubble';
-import { renderHythergraph } from '../graphs/Hythergraph';
-import { renderCubeGraph } from '../graphs/CubeGraph';
-import { renderRadarChart } from '../graphs/RadarChart';
+import { renderGraph } from '../graphs/renderGraph';
 
 interface ExportModalProps {
   settings: ExportSettings;
@@ -77,29 +66,10 @@ export default function ExportModal({
 
   const getRenderFn = useCallback(() => {
     return (ctx: CanvasRenderingContext2D, w: number, h: number) => {
-      if (graphType === 'climate') {
-        if (climateMode === 'normal') renderClimateGraph(ctx, w, h, climateData, options);
-        else if (climateMode === 'deviationA') renderDeviationAGraph(ctx, w, h, deviationAData, options);
-        else renderDeviationBGraph(ctx, w, h, deviationBData, options);
-      } else if (graphType === 'pyramid') {
-        renderPyramidGraph(ctx, w, h, pyramidData, options);
-      } else if (graphType === 'ternary') {
-        renderTernaryGraph(ctx, w, h, ternaryData, options);
-      } else if (graphType === 'stacked') {
-        renderStackedGraph(ctx, w, h, stackedData, options);
-      } else if (graphType === 'absbar') {
-        renderAbsBarGraph(ctx, w, h, absBarData, options);
-      } else if (graphType === 'line') {
-        renderLineGraph(ctx, w, h, lineData, options);
-      } else if (graphType === 'scatter') {
-        renderScatterGraph(ctx, w, h, scatterData, options);
-      } else if (graphType === 'hythergraph') {
-        renderHythergraph(ctx, w, h, hythergraphData, options);
-      } else if (graphType === 'cube') {
-        renderCubeGraph(ctx, w, h, cubeData, options);
-      } else if (graphType === 'radar') {
-        renderRadarChart(ctx, w, h, radarData, options);
-      }
+      renderGraph(ctx, w, h, graphType, {
+        climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData,
+        stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData,
+      }, options);
     };
   }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData, options]);
 

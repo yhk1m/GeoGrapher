@@ -1,18 +1,7 @@
 // © 2026 김용현
 import { useRef, useEffect, useCallback } from 'react';
 import { type GraphType, type ClimateMode, type ClimateGraphData, type DeviationAData, type DeviationBData, type PyramidGraphData, type TernaryGraphData, type StackedGraphData, type AbsBarGraphData, type LineGraphData, type ScatterGraphData, type HythergraphData, type CubeGraphData, type RadarGraphData, type GraphOptions } from '../data/types';
-import { renderClimateGraph } from '../graphs/ClimateGraph';
-import { renderDeviationAGraph } from '../graphs/DeviationAGraph';
-import { renderDeviationBGraph } from '../graphs/DeviationBGraph';
-import { renderPyramidGraph } from '../graphs/PopulationPyramid';
-import { renderTernaryGraph } from '../graphs/TernaryDiagram';
-import { renderStackedGraph } from '../graphs/StackedBarPie';
-import { renderAbsBarGraph } from '../graphs/AbsBarGraph';
-import { renderLineGraph } from '../graphs/LineGraph';
-import { renderScatterGraph } from '../graphs/ScatterBubble';
-import { renderHythergraph } from '../graphs/Hythergraph';
-import { renderCubeGraph } from '../graphs/CubeGraph';
-import { renderRadarChart } from '../graphs/RadarChart';
+import { renderGraph } from '../graphs/renderGraph';
 
 interface GraphCanvasProps {
   graphType: GraphType;
@@ -55,33 +44,11 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
     const ctx = canvas.getContext('2d')!;
     ctx.scale(dpr, dpr);
 
-    if (graphType === 'climate') {
-      if (climateMode === 'normal') {
-        renderClimateGraph(ctx, displayW, displayH, climateData, options);
-      } else if (climateMode === 'deviationA') {
-        renderDeviationAGraph(ctx, displayW, displayH, deviationAData, options);
-      } else {
-        renderDeviationBGraph(ctx, displayW, displayH, deviationBData, options);
-      }
-    } else if (graphType === 'pyramid') {
-      renderPyramidGraph(ctx, displayW, displayH, pyramidData, options);
-    } else if (graphType === 'ternary') {
-      renderTernaryGraph(ctx, displayW, displayH, ternaryData, options);
-    } else if (graphType === 'stacked') {
-      renderStackedGraph(ctx, displayW, displayH, stackedData, options);
-    } else if (graphType === 'absbar') {
-      renderAbsBarGraph(ctx, displayW, displayH, absBarData, options);
-    } else if (graphType === 'line') {
-      renderLineGraph(ctx, displayW, displayH, lineData, options);
-    } else if (graphType === 'scatter') {
-      renderScatterGraph(ctx, displayW, displayH, scatterData, options);
-    } else if (graphType === 'hythergraph') {
-      renderHythergraph(ctx, displayW, displayH, hythergraphData, options);
-    } else if (graphType === 'cube') {
-      renderCubeGraph(ctx, displayW, displayH, cubeData, options);
-    } else if (graphType === 'radar') {
-      renderRadarChart(ctx, displayW, displayH, radarData, options);
-    } else {
+    const drawn = renderGraph(ctx, displayW, displayH, graphType, {
+      climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData,
+      stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData,
+    }, options);
+    if (!drawn) {
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, displayW, displayH);
       ctx.fillStyle = '#ccc';
@@ -96,7 +63,13 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
     render();
     const observer = new ResizeObserver(render);
     if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
+    // 웹폰트(Noto)가 늦게 도착하면 대체 글꼴로 그린 그림을 다시 그린다
+    const fonts = document.fonts;
+    fonts?.addEventListener?.('loadingdone', render);
+    return () => {
+      observer.disconnect();
+      fonts?.removeEventListener?.('loadingdone', render);
+    };
   }, [render]);
 
   return (
