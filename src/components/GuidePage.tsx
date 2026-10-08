@@ -74,7 +74,7 @@ export default function GuidePage({ onNavigate }: Props) {
             <h3 style={styles.cardTitle}>꺾은선 그래프</h3>
             <p style={styles.cardDesc}>
               연도·월별 추이를 꺾은선으로 그립니다. 계열은 <strong>선 종류(실선/파선/점선/일점쇄선)·굵기·회색</strong>과 기호로 구분하고,
-              계열 이름은 <strong>선 끝·유도선·범례</strong> 중에서 고릅니다. x 이름을 비우면 그 자리의 라벨과 세로 격자를 건너뛰어
+              계열 이름은 <strong>선 끝·유도선·오른쪽 줄·범례</strong> 중에서 고르고, 틀은 사각 또는 L자로 둘 수 있습니다. x 이름을 비우면 그 자리의 라벨과 세로 격자를 건너뛰어
               5년 자료에 10년 라벨을 다는 시험지 관습을 재현할 수 있습니다.
             </p>
           </div>
@@ -164,11 +164,12 @@ export default function GuidePage({ onNavigate }: Props) {
           <h2 style={styles.h2}>공통 기능</h2>
           <table style={styles.table}>
             <tbody>
+              <tr><td style={styles.tdLabel}>그림 양식</td><td style={styles.tdDesc}><strong>시험지 양식</strong>(기본)은 평가원 시험지에서 잰 글꼴·선 굵기를 따릅니다. 예전 그림이 필요하면 <strong>옛 모양(1.x)</strong>을 고릅니다. 축이 있는 그래프는 눈금 방향(자동/안쪽/바깥)도 고를 수 있습니다.</td></tr>
               <tr><td style={styles.tdLabel}>제목 / 출처 / 각주</td><td style={styles.tdDesc}>우측 패널에서 입력하면 그래프에 표시됩니다.</td></tr>
               <tr><td style={styles.tdLabel}>글꼴</td><td style={styles.tdDesc}>세리프(수능 기본) / 산세리프 / 사용자 지정을 선택합니다. 사용자 지정 시 컴퓨터에 설치된 글꼴명을 입력하면 적용됩니다.</td></tr>
               <tr><td style={styles.tdLabel}>글자 크기</td><td style={styles.tdDesc}>제목, 축 라벨, 눈금, 데이터 라벨의 크기를 각각 조절합니다.</td></tr>
               <tr><td style={styles.tdLabel}>데이터 라벨</td><td style={styles.tdDesc}>각 데이터 포인트에 값을 직접 표시합니다.</td></tr>
-              <tr><td style={styles.tdLabel}>범례</td><td style={styles.tdDesc}>하단 또는 우측에 범례를 배치합니다.</td></tr>
+              <tr><td style={styles.tdLabel}>범례</td><td style={styles.tdDesc}>그래프 아래 또는 오른쪽에 범례를 배치합니다.</td></tr>
               <tr><td style={styles.tdLabel}>PNG 내보내기</td><td style={styles.tdDesc}>시험 출제용(800x600) 또는 사용자 정의 크기 + 배율(1x/2x/3x)로 다운로드합니다.</td></tr>
               <tr><td style={styles.tdLabel}>드로어 토글</td><td style={styles.tdDesc}>우측 상단 ✕/☰ 버튼으로 데이터 입력 패널을 열고 닫습니다.</td></tr>
             </tbody>
@@ -195,8 +196,8 @@ export default function GuidePage({ onNavigate }: Props) {
         <section style={styles.section}>
           <h2 style={styles.h2}>출력 스타일</h2>
           <ul style={styles.ul}>
-            <li>수능 출제 스타일: <strong>흑백, 세리프체</strong> 기본</li>
-            <li>선 굵기: 축선 2px, 데이터선 2.5px, 보조선 0.5px(점선)</li>
+            <li>수능 시험지 양식: <strong>흑백</strong>, 축·눈금·자료값은 명조, 제목·범례·출처는 고딕, 숫자는 세리프 (그래프 엔진: csat-chart.js)</li>
+            <li>한컴오피스 글꼴(HY신명조·HY중고딕)이 설치되어 있으면 시험지와 가장 비슷하고, 없으면 Noto 글꼴로 그립니다</li>
             <li>패턴 구분: 단색 그레이스케일 + 사선/격자/도트 등 흑백 패턴</li>
             <li>PNG 내보내기 시 흰색 배경 포함</li>
           </ul>
