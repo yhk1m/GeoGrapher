@@ -16,7 +16,10 @@ import {
   type RadarGraphData,
   type GraphOptions,
   type LegendPosition,
+  type StyleName,
+  type TickDirection,
   GRAPH_LABELS,
+  createDefaultGraphOptions,
 } from '../data/types';
 import ClimateInput from './ClimateInput';
 import DeviationAInput from './DeviationAInput';
@@ -62,6 +65,34 @@ interface DataDrawerProps {
   onRadarDataChange: (data: RadarGraphData) => void;
   options: GraphOptions;
   onOptionsChange: (options: GraphOptions) => void;
+}
+
+const STYLE_LABELS: Record<StyleName, string> = {
+  exam: '시험지 양식',
+  classic: '옛 모양(1.x)',
+};
+
+const TICK_LABELS: { value: TickDirection | undefined; label: string }[] = [
+  { value: undefined, label: '자동' },
+  { value: 'in', label: '안쪽' },
+  { value: 'out', label: '바깥' },
+];
+
+/** 눈금 방향을 읽는 종류 (기후·편차는 읽지 않는다) */
+const TICK_TYPES: ReadonlyArray<GraphType> = ['absbar', 'hythergraph', 'line', 'pyramid', 'scatter', 'stacked', 'ternary'];
+
+/**
+ * 양식을 바꾼다. 글자 크기는 양식마다 기본값이 달라서, 사용자가 손대지 않은
+ * 칸(이전 양식의 기본값 그대로인 칸)만 새 양식의 기본값으로 바꾼다.
+ */
+function switchStyle(options: GraphOptions, next: StyleName): GraphOptions {
+  const prev = createDefaultGraphOptions(options.style ?? 'exam').fontSize;
+  const target = createDefaultGraphOptions(next).fontSize;
+  const fontSize = { ...options.fontSize };
+  for (const k of Object.keys(fontSize) as (keyof typeof fontSize)[]) {
+    if (fontSize[k] === prev[k]) fontSize[k] = target[k];
+  }
+  return { ...options, style: next, fontSize };
 }
 
 const MODE_LABELS: Record<ClimateMode, string> = {
@@ -141,6 +172,51 @@ export default function DataDrawer({
           </div>
         </section>
       )}
+
+      {/* 그림 양식 */}
+      <section style={styles.section}>
+        <label style={styles.label}>그림 양식</label>
+        <div style={styles.modeGroup}>
+          {(['exam', 'classic'] as StyleName[]).map((st) => (
+            <button
+              key={st}
+              onClick={() => onOptionsChange(switchStyle(options, st))}
+              style={{
+                ...styles.modeBtn,
+                background: (options.style ?? 'exam') === st ? '#1B2A4A' : '#fff',
+                color: (options.style ?? 'exam') === st ? '#fff' : '#374151',
+              }}
+            >
+              {STYLE_LABELS[st]}
+            </button>
+          ))}
+        </div>
+        <p style={styles.hint}>
+          {(options.style ?? 'exam') === 'exam'
+            ? '평가원 시험지의 글꼴·선 굵기를 따릅니다. 한컴오피스 글꼴(HY신명조·HY중고딕)이 있으면 가장 비슷합니다.'
+            : '예전(1.x) GeoGrapher 그림입니다.'}
+        </p>
+        {TICK_TYPES.includes(graphType) && !(graphType === 'stacked' && stackedData.displayMode === 'pie') && (
+          <>
+            <label style={{ ...styles.label, marginTop: 8 }}>눈금 방향</label>
+            <div style={styles.modeGroup}>
+              {TICK_LABELS.map(({ value, label }) => (
+                <button
+                  key={label}
+                  onClick={() => onOptionsChange({ ...options, tickDirection: value })}
+                  style={{
+                    ...styles.modeBtn,
+                    background: options.tickDirection === value ? '#1B2A4A' : '#fff',
+                    color: options.tickDirection === value ? '#fff' : '#374151',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
       {/* 공통 옵션: 제목, 출처 */}
       <section style={styles.section}>
@@ -256,6 +332,7 @@ export default function DataDrawer({
         </label>
         {options.showLegend && (
           <>
+            {graphType !== 'ternary' && (graphType !== 'line' || lineData.labelPlacement === 'legend') && <>
             <label style={{ ...styles.label, marginTop: 8 }}>범례 위치</label>
             <div style={styles.modeGroup}>
               {(['bottom', 'right'] as LegendPosition[]).map((pos) => (
@@ -264,14 +341,15 @@ export default function DataDrawer({
                   onClick={() => onOptionsChange({ ...options, legendPosition: pos })}
                   style={{
                     ...styles.modeBtn,
-                    background: options.legendPosition === pos ? '#1B2A4A' : '#fff',
-                    color: options.legendPosition === pos ? '#fff' : '#374151',
+                    background: (options.legendPosition ?? 'bottom') === pos ? '#1B2A4A' : '#fff',
+                    color: (options.legendPosition ?? 'bottom') === pos ? '#fff' : '#374151',
                   }}
                 >
-                  {pos === 'bottom' ? '하단' : '우측'}
+                  {pos === 'bottom' ? '아래' : '오른쪽'}
                 </button>
               ))}
             </div>
+            </>}
             <label style={{ ...styles.label, marginTop: 8 }}>범례 라벨</label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -292,6 +370,28 @@ export default function DataDrawer({
           </>
         )}
       </section>}
+
+      {/* 산점도 버블 범례 — 모서리가 다 막혔을 때 나갈 쪽 (시험지 양식) */}
+      {graphType === 'scatter' && scatterData.showBubble && (options.style ?? 'exam') === 'exam' && (
+        <section style={styles.section}>
+          <label style={styles.label}>버블 범례가 모서리에 못 앉으면</label>
+          <div style={styles.modeGroup}>
+            {(['bottom', 'right'] as LegendPosition[]).map((pos) => (
+              <button
+                key={pos}
+                onClick={() => onOptionsChange({ ...options, legendPosition: pos })}
+                style={{
+                  ...styles.modeBtn,
+                  background: (options.legendPosition ?? 'right') === pos ? '#1B2A4A' : '#fff',
+                  color: (options.legendPosition ?? 'right') === pos ? '#fff' : '#374151',
+                }}
+              >
+                {pos === 'bottom' ? '아래로' : '오른쪽으로'}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 그래프별 데이터 입력 */}
       {graphType === 'climate' && climateMode === 'normal' && (
@@ -407,6 +507,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.15s',
+  },
+  hint: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 6,
+    lineHeight: 1.5,
   },
   placeholder: {
     padding: '24px 0',
