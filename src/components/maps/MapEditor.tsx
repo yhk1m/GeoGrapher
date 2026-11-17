@@ -16,6 +16,8 @@ import {
   createDefaultChoroplethState,
   getEffectiveColors,
 } from './types';
+import { withUi } from '../../styles/ui';
+import Select from '../ui/Select';
 
 export default function MapEditor() {
   const [state, setState] = useState<ChoroplethState>(createDefaultChoroplethState);
@@ -51,7 +53,7 @@ export default function MapEditor() {
 
   const handleUnitChange = (unit: MapUnit) => {
     if (Object.keys(state.regionBin).length > 0) {
-      const ok = window.confirm('행정구역 단위를 바꾸면 현재 색칠이 초기화됩니다. 계속할까요?');
+      const ok = window.confirm('행정구역 단위를 바꾸면 칠한 색이 모두 지워져요. 바꿀까요?');
       if (!ok) return;
     }
     setState((s) => ({ ...s, unit, regionBin: {} }));
@@ -98,7 +100,7 @@ export default function MapEditor() {
   };
 
   const handleResetColoring = () => {
-    if (!window.confirm('모든 색칠을 초기화할까요?')) return;
+    if (!window.confirm('칠한 색을 모두 지울까요?')) return;
     setState((s) => ({ ...s, regionBin: {} }));
   };
 
@@ -119,7 +121,7 @@ export default function MapEditor() {
 
       <aside style={styles.toolPanel}>
         <Section title="행정구역 단위">
-          <select
+          <Select
             value={state.unit}
             onChange={(e) => handleUnitChange(e.target.value as MapUnit)}
             style={styles.select}
@@ -129,11 +131,11 @@ export default function MapEditor() {
                 {MAP_UNIT_LABELS[u]}
               </option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="채우기 모드">
-          <select
+          <Select
             value={state.fillMode}
             onChange={(e) => handleFillModeChange(e.target.value as FillMode)}
             style={styles.select}
@@ -143,23 +145,23 @@ export default function MapEditor() {
                 {FILL_MODE_LABELS[m]}
               </option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="색상 팔레트">
-          <select
+          <Select
             value={state.palette}
             onChange={(e) => handlePaletteChange(e.target.value as PaletteKind)}
             style={styles.select}
             disabled={paletteDisabled}
-            title={paletteDisabled ? '현재 모드에서는 팔레트가 자동 결정됩니다' : ''}
+            title={paletteDisabled ? '이 채우기 모드에서는 팔레트가 자동으로 정해져요' : ''}
           >
             {(Object.keys(PALETTE_LABELS) as PaletteKind[]).map((p) => (
               <option key={p} value={p}>
                 {PALETTE_LABELS[p]}
               </option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title={`등급 수: ${state.binCount}`}>
@@ -173,7 +175,7 @@ export default function MapEditor() {
           />
         </Section>
 
-        <Section title="등급 · 색상 · 패턴 · 라벨">
+        <Section title="등급별 색, 무늬, 라벨">
           <div style={styles.hint}>
             행 선택 → 지도 클릭으로 색칠. 우클릭 = 스포이드.
           </div>
@@ -318,7 +320,7 @@ function BinRow({
           value={color.startsWith('#') ? color : '#ffffff'}
           onChange={(e) => onColorChange(e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          title={colorEditable ? '색상 변경' : '현재 모드에서는 색상이 자동 결정됩니다'}
+          title={colorEditable ? '색상 변경' : '이 채우기 모드에서는 색이 자동으로 정해져요'}
           disabled={!colorEditable}
           style={{ ...styles.colorInput, opacity: colorEditable ? 1 : 0.4 }}
         />
@@ -333,7 +335,7 @@ function BinRow({
         )}
       </div>
       {patternEnabled && (
-        <select
+        <Select
           value={pattern}
           onChange={(e) => onPatternChange(e.target.value as PatternKind)}
           onClick={(e) => e.stopPropagation()}
@@ -343,7 +345,7 @@ function BinRow({
           {PATTERN_ORDER.map((p) => (
             <option key={p} value={p}>{PATTERN_LABELS[p]}</option>
           ))}
-        </select>
+        </Select>
       )}
       <input
         type="text"
@@ -357,7 +359,7 @@ function BinRow({
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   wrap: {
     position: 'relative' as const,
     width: '100%',
@@ -533,4 +535,4 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     color: '#737373',
   },
-};
+});

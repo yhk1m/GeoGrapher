@@ -1,6 +1,7 @@
 // © 2026 김용현
 import { useState } from 'react';
 import { type HythergraphData, type HythergraphMode, type MonthLabelStyle } from '../data/types';
+import { withUi, seg } from '../styles/ui';
 
 interface Props {
   data: HythergraphData;
@@ -117,9 +118,9 @@ export default function HythergraphInput({ data, onChange }: Props) {
       <section style={styles.section}>
         <label style={styles.label}>축 단위</label>
         <div style={styles.row}>
-          <span style={{ fontSize: 12, color: '#6B7280' }}>X축</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>X축</span>
           <input type="text" value={data.xUnit} onChange={(e) => onChange({ ...data, xUnit: e.target.value })} placeholder="(°C)" style={{ ...styles.input, width: 70 }} />
-          <span style={{ fontSize: 12, color: '#6B7280', marginLeft: 8 }}>Y축</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 8 }}>Y축</span>
           <input type="text" value={data.yUnit} onChange={(e) => onChange({ ...data, yUnit: e.target.value })} placeholder="(mm)" style={{ ...styles.input, width: 70 }} />
         </div>
       </section>
@@ -156,7 +157,7 @@ export default function HythergraphInput({ data, onChange }: Props) {
           <label style={styles.label}>지역 (계열)</label>
           <div style={styles.btnGroup}>
             <button onClick={removeSeries} style={styles.smallBtn} disabled={data.series.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.series.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.series.length}개</span>
             <button onClick={addSeries} style={styles.smallBtn} disabled={data.series.length >= 5}>+</button>
           </div>
         </div>
@@ -167,13 +168,11 @@ export default function HythergraphInput({ data, onChange }: Props) {
               key={i}
               onClick={() => setActiveSeries(i)}
               style={{
-                padding: '4px 12px',
-                borderRadius: 4,
-                border: '1px solid #D1D5DB',
+                height: 32, padding: '0 12px',
+                borderRadius: 'var(--r-control)',
                 fontSize: 12,
-                fontWeight: activeSeries === i ? 700 : 400,
-                background: activeSeries === i ? '#1B2A4A' : '#fff',
-                color: activeSeries === i ? '#fff' : '#374151',
+                fontWeight: activeSeries === i ? 600 : 400,
+                ...seg(activeSeries === i),
                 cursor: 'pointer',
               }}
             >
@@ -216,7 +215,7 @@ export default function HythergraphInput({ data, onChange }: Props) {
           <tbody>
             {active.months.map((m, i) => (
               <tr key={i}>
-                <td style={{ ...styles.td, fontWeight: 600, color: '#374151' }}>{MONTH_NAMES[i]}</td>
+                <td style={{ ...styles.td, fontWeight: 600, color: 'var(--text)' }}>{MONTH_NAMES[i]}</td>
                 <td style={styles.td}>
                   <input type="number" value={m.temp} onChange={(e) => updateMonth(activeSeries, i, 'temp', e.target.value)} style={styles.cellInput} step="any" />
                 </td>
@@ -232,7 +231,7 @@ export default function HythergraphInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: { marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #E5E7EB' },
   label: { display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 4 },
   radioGroup: { display: 'flex', gap: 12 },
@@ -251,4 +250,4 @@ const styles: Record<string, React.CSSProperties> = {
   csvRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   csvButtons: { display: 'flex', gap: 6 },
   csvBtn: { padding: '4px 10px', fontSize: 11, borderRadius: 4, border: '1px solid #D1D5DB', background: '#fff', color: '#374151', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' },
-};
+});

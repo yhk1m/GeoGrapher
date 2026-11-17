@@ -1,4 +1,15 @@
 /* © 2026 김용현 */
+/*
+ * 화면 토큰 (당토 디자인, 2026-11-18)
+ * - 화면은 라이트 고정이다. 컴퓨터가 다크 모드여도 밝게 보인다(사용자 결정, GeoTester 와 같음).
+ * - 밀도는 촘촘(교사용 도구). 글자는 12px 아래로 내리지 않고, 굵기는 400과 600 두 가지.
+ * - 머리띠는 GeoGrapher 네이비(--brand) 고정. 주색(--accent)도 같은 네이비다.
+ * - 컴포넌트는 색 값을 직접 적지 말고 src/styles/ui.ts 의 withUi, seg 를 쓴다.
+ * - 그래프와 지도(내보내는 그림)는 종이 그대로라 이 토큰과 상관없다.
+ */
+@font-face { font-family: "Pretendard"; font-weight: 400; font-style: normal; font-display: swap; src: url("/fonts/Pretendard-Regular.woff2") format("woff2"); }
+@font-face { font-family: "Pretendard"; font-weight: 600; font-style: normal; font-display: swap; src: url("/fonts/Pretendard-SemiBold.woff2") format("woff2"); }
+
 * {
   margin: 0;
   padding: 0;
@@ -6,18 +17,40 @@
 }
 
 :root {
-  --header-bg: #1B2A4A;
-  --header-text: #ffffff;
-  --bg-main: #ffffff;
-  --bg-drawer: #F8F9FA;
-  --border: #E5E7EB;
+  --brand: #1B2A4A;
+  --on-brand: #ffffff;
+  --on-brand-muted: rgba(255, 255, 255, 0.72);
+
+  --bg: #f1f3f6;
+  --surface: #ffffff;
+  --fill: #f1f3f6;
+  --fill-hover: #e4e7ec;
+  --ink: #1a1e25;
+  --text: #4a5260;
+  --muted: #646d7a;
+  --icon: #868f9c;
+  --faint: #a9b1bd;
+  --line: rgba(16, 24, 40, 0.08);
+  --line-strong: rgba(16, 24, 40, 0.16);
+  --focus: #2a64d4;
+  --critical: #c8293a;
+  --critical-weak: #fdecee;
+
   --accent: #1B2A4A;
-  --text-primary: #111827;
-  --text-secondary: #6B7280;
-  --tab-inactive: rgba(255, 255, 255, 0.08);
-  --tab-active: rgba(255, 255, 255, 0.2);
-  --font-ui: 'Noto Sans KR', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --on-accent: #ffffff;
+  --accent-weak: color-mix(in oklch, var(--accent) 12%, var(--surface));
+  --accent-weak-press: color-mix(in oklch, var(--accent) 20%, var(--surface));
+  --accent-text: color-mix(in oklch, var(--accent) 88%, var(--ink));
+
+  --r-control: 7px;
+  --r-card: 10px;
+  --r-sheet: 14px;
+  --shadow-2: 0 4px 16px rgba(16, 24, 40, 0.08);
+  --shadow-3: 0 12px 32px rgba(16, 24, 40, 0.12);
+
+  --font-ui: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+
+  color-scheme: light;
 }
 
 html, body, #root {
@@ -27,17 +60,45 @@ html, body, #root {
 
 body {
   font-family: var(--font-ui);
-  color: var(--text-primary);
-  background: var(--bg-main);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
 }
 
 input, select, textarea, button {
   font-family: inherit;
+  color: inherit;
 }
 
 input[type="number"] {
-  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--faint);
+}
+
+/* 체크, 라디오, 슬라이더는 주색을 따른다 */
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+  accent-color: var(--accent);
+}
+input[type="checkbox"], input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* 글 칸에 초점이 오면 테두리를 주색으로 */
+input[type="text"]:focus, input[type="number"]:focus, input:not([type]):focus, textarea:focus {
+  border-color: var(--accent) !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 button {
@@ -45,9 +106,18 @@ button {
   border: none;
   background: none;
 }
+button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
 
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -55,6 +125,91 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--line-strong);
   border-radius: 3px;
 }
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+
+/* 고르기 칸 (src/components/ui/Select.tsx) */
+.gg-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+.gg-select[aria-expanded="true"] {
+  border-color: var(--accent) !important;
+}
+.gg-select:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.gg-select-chevron {
+  flex-shrink: 0;
+  color: var(--icon);
+  transition: transform 150ms ease;
+}
+.gg-select[aria-expanded="true"] .gg-select-chevron {
+  transform: rotate(180deg);
+}
+.gg-select-menu {
+  position: fixed;
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-3), 0 0 0 1px var(--line);
+  outline: none;
+  list-style: none;
+  animation: gg-fade 150ms cubic-bezier(0, 0, 0.15, 1);
+}
+.gg-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.gg-select-option[data-active="true"] {
+  background: var(--fill-hover);
+}
+.gg-select-option[aria-selected="true"] {
+  background: var(--accent-weak);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.gg-select-option[aria-selected="true"][data-active="true"] {
+  background: var(--accent-weak-press);
+}
+.gg-select-option[aria-disabled="true"] {
+  color: var(--faint);
+  cursor: default;
+}
+@keyframes gg-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 단추 눌림 반응 */
+.gg-press:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+/* 머리띠 위 단추, 펼친 메뉴 줄 */
+.gg-on-brand:hover { background: rgba(255, 255, 255, 0.12) !important; }
+.gg-menu-item:hover { background: var(--fill-hover); }
+.gg-menu-item[aria-checked="true"]:hover { background: var(--accent-weak-press) !important; }
+.gg-row:hover { background: var(--fill); }
+
+strong, b { font-weight: 600; }

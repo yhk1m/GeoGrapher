@@ -20,6 +20,7 @@ import {
 } from '../data/types';
 import { exportCanvasToPNG } from '../canvas/export';
 import { renderGraph } from '../graphs/renderGraph';
+import { withUi } from '../styles/ui';
 
 interface ExportModalProps {
   settings: ExportSettings;
@@ -129,7 +130,7 @@ export default function ExportModal({
   return (
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={styles.title}>PNG 내보내기</h3>
+        <h3 style={styles.title}>PNG로 저장</h3>
 
         {/* 미리보기 */}
         <div style={styles.previewWrap}>
@@ -138,7 +139,7 @@ export default function ExportModal({
 
         {/* 모드 선택 */}
         <div style={styles.field}>
-          <label style={styles.label}>모드</label>
+          <label style={styles.label}>크기</label>
           <div style={styles.radioGroup}>
             <label style={styles.radio}>
               <input
@@ -146,7 +147,7 @@ export default function ExportModal({
                 checked={settings.mode === 'exam'}
                 onChange={() => onSettingsChange({ ...settings, mode: 'exam' })}
               />
-              시험 출제용 (800x600)
+              시험 출제용 (800×600)
             </label>
             <label style={styles.radio}>
               <input
@@ -154,7 +155,7 @@ export default function ExportModal({
                 checked={settings.mode === 'custom'}
                 onChange={() => onSettingsChange({ ...settings, mode: 'custom' })}
               />
-              사용자 정의
+              직접 정하기
             </label>
           </div>
         </div>
@@ -200,32 +201,33 @@ export default function ExportModal({
 
         {/* 해상도 정보 */}
         <div style={styles.info}>
-          실제 해상도: {exportW * settings.scale} x {exportH * settings.scale} px
+          받을 그림 크기: {exportW * settings.scale}×{exportH * settings.scale}px
         </div>
 
         {/* 버튼 */}
         <div style={styles.buttons}>
-          <button onClick={onClose} style={styles.cancelBtn}>취소</button>
-          <button onClick={handleExport} style={styles.exportBtn}>다운로드</button>
+          <button onClick={onClose} style={styles.cancelBtn}>닫기</button>
+          <button onClick={handleExport} style={styles.exportBtn}>PNG 받기</button>
         </div>
       </div>
     </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   overlay: {
     position: 'fixed',
     inset: 0,
-    background: 'rgba(0,0,0,0.4)',
+    background: 'rgba(16,24,40,0.45)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 100,
   },
   modal: {
-    background: '#fff',
-    borderRadius: 12,
+    background: 'var(--surface)',
+    borderRadius: 'var(--r-sheet)',
+    boxShadow: 'var(--shadow-3)',
     padding: 24,
     width: 560,
     maxWidth: '90vw',
@@ -301,23 +303,24 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
   },
   cancelBtn: {
-    padding: '8px 16px',
-    borderRadius: 6,
-    border: '1px solid #E5E7EB',
-    fontSize: 13,
-    color: '#6B7280',
-    background: '#fff',
+    height: 40,
+    padding: '0 16px',
+    borderRadius: 'var(--r-control)',
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--ink)',
+    background: 'var(--fill)',
   },
   exportBtn: {
-    padding: '8px 20px',
-    borderRadius: 6,
-    border: 'none',
-    fontSize: 13,
-    fontWeight: 700,
-    color: '#fff',
-    background: '#1B2A4A',
+    height: 40,
+    padding: '0 20px',
+    borderRadius: 'var(--r-control)',
+    fontSize: 14,
+    fontWeight: 600,
+    color: 'var(--on-accent)',
+    background: 'var(--accent)',
   },
-};
+});
 
 // ─────────────────────────────────────────────────────────
 // 지도 (SVG) → PNG 헬퍼 (choropleth / symbolmap 공용)
@@ -366,7 +369,7 @@ async function drawMapSvgToCanvas(svgId: string, canvas: HTMLCanvasElement, targ
 async function exportMapPng(svgId: string, typeName: string, exportW: number, exportH: number, scale: 1 | 2 | 3) {
   const loaded = await loadMapSvgImage(svgId);
   if (!loaded) {
-    alert('지도 SVG를 찾을 수 없습니다.');
+    alert('지도를 찾지 못했어요. 지도가 다 그려진 뒤에 다시 저장해 주세요.');
     return;
   }
   const { img, w, h } = loaded;

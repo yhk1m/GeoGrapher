@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type DeviationBData } from '../data/types';
+import { withUi } from '../styles/ui';
 
 interface Props {
   data: DeviationBData;
@@ -141,7 +142,7 @@ export default function DeviationBInput({ data, onChange }: Props) {
           <label style={styles.label}>지역별 데이터</label>
           <div style={styles.regionBtns}>
             <button onClick={removeRegion} style={styles.smallBtn} disabled={data.regions.length <= 2}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.regions.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.regions.length}개</span>
             <button onClick={addRegion} style={styles.smallBtn} disabled={data.regions.length >= 10}>+</button>
           </div>
         </div>
@@ -191,7 +192,7 @@ export default function DeviationBInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -315,4 +316,4 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'right' as const,
     outline: 'none',
   },
-};
+});

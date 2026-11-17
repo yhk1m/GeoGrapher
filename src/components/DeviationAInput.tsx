@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type DeviationAData, type MonthInterval } from '../data/types';
+import { withUi } from '../styles/ui';
 
 const MONTH_LABELS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
@@ -144,7 +145,7 @@ export default function DeviationAInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -224,4 +225,4 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'right' as const,
     outline: 'none',
   },
-};
+});

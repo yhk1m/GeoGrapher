@@ -2,6 +2,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { type GraphType, type ClimateMode, type ClimateGraphData, type DeviationAData, type DeviationBData, type PyramidGraphData, type TernaryGraphData, type StackedGraphData, type AbsBarGraphData, type LineGraphData, type ScatterGraphData, type HythergraphData, type CubeGraphData, type RadarGraphData, type GraphOptions } from '../data/types';
 import { renderGraph } from '../graphs/renderGraph';
+import { withUi } from '../styles/ui';
 
 interface GraphCanvasProps {
   graphType: GraphType;
@@ -55,7 +56,7 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
       ctx.font = "16px 'Noto Sans KR', sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('이 그래프 유형은 아직 준비 중입니다.', displayW / 2, displayH / 2);
+      ctx.fillText('이 그래프는 아직 만들고 있어요.', displayW / 2, displayH / 2);
     }
   }, [graphType, climateMode, climateData, deviationAData, deviationBData, pyramidData, ternaryData, stackedData, absBarData, lineData, scatterData, hythergraphData, cubeData, radarData, options]);
 
@@ -79,7 +80,7 @@ export default function GraphCanvas({ graphType, climateMode, climateData, devia
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   container: {
     flex: 1,
     minWidth: 0,
@@ -92,4 +93,4 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     left: 0,
   },
-};
+});

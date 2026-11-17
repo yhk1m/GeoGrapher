@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type PyramidGraphData, type PyramidUnit, type AgeLabelSide, AGE_GROUPS } from '../data/types';
+import { withUi } from '../styles/ui';
 
 interface Props {
   data: PyramidGraphData;
@@ -196,7 +197,7 @@ export default function PyramidInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -303,4 +304,4 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'right' as const,
     outline: 'none',
   },
-};
+});

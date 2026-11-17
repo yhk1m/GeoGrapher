@@ -1,5 +1,7 @@
 // © 2026 김용현
 import { type StackedGraphData, type StackedDisplayMode, type StackedBarDirection } from '../data/types';
+import { withUi } from '../styles/ui';
+import Select from './ui/Select';
 
 interface Props {
   data: StackedGraphData;
@@ -89,7 +91,7 @@ export default function StackedInput({ data, onChange }: Props) {
             ))}
           </div>
           <label style={{ ...styles.label, marginTop: 10 }}>축 단위 설정</label>
-          <select
+          <Select
             value={data.axisStep ?? 20}
             onChange={(e) => onChange({ ...data, axisStep: Number(e.target.value) })}
             style={{ padding: '4px 8px', border: '1px solid #E5E7EB', borderRadius: 4, fontSize: 13 }}
@@ -97,7 +99,7 @@ export default function StackedInput({ data, onChange }: Props) {
             {[5, 10, 20, 25, 50].map((v) => (
               <option key={v} value={v}>{v}</option>
             ))}
-          </select>
+          </Select>
         </section>
       )}
 
@@ -157,7 +159,7 @@ export default function StackedInput({ data, onChange }: Props) {
           <label style={styles.label}>항목 (시리즈)</label>
           <div style={styles.btnGroup}>
             <button onClick={removeSeries} style={styles.smallBtn} disabled={data.seriesLabels.length <= 2}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.seriesLabels.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.seriesLabels.length}개</span>
             <button onClick={addSeries} style={styles.smallBtn} disabled={data.seriesLabels.length >= 11}>+</button>
           </div>
         </div>
@@ -180,7 +182,7 @@ export default function StackedInput({ data, onChange }: Props) {
           <label style={styles.label}>카테고리 데이터</label>
           <div style={styles.btnGroup}>
             <button onClick={removeCategory} style={styles.smallBtn} disabled={data.categories.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.categories.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.categories.length}개</span>
             <button onClick={addCategory} style={styles.smallBtn}>+</button>
           </div>
         </div>
@@ -239,7 +241,7 @@ export default function StackedInput({ data, onChange }: Props) {
                       type="text"
                       value={cat.label}
                       disabled
-                      style={{ ...styles.cellInput, width: 60, textAlign: 'center', background: '#F3F4F6', color: '#9CA3AF' }}
+                      style={{ ...styles.cellInput, width: 60, textAlign: 'center', background: 'var(--fill)', color: 'var(--muted)' }}
                     />
                   </td>
                   {cat.values.slice(6).map((v, si) => (
@@ -263,7 +265,7 @@ export default function StackedInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -339,4 +341,4 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'right' as const,
     outline: 'none',
   },
-};
+});

@@ -1,6 +1,7 @@
 // © 2026 김용현
 import { useEffect, useRef, useState } from 'react';
 import { dismissAnnouncement } from './announcement';
+import { withUi } from '../styles/ui';
 
 interface Props {
   onClose: () => void;
@@ -77,7 +78,7 @@ export default function AnnouncementModal({ onClose }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   backdrop: {
     position: 'fixed' as const,
     inset: 0,
@@ -164,4 +165,4 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     cursor: 'pointer',
   },
-};
+});

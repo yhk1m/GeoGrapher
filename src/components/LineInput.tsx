@@ -9,6 +9,8 @@ import {
   LINE_MARKER_ORDER,
   defaultLineLeader,
 } from '../data/types';
+import { withUi, seg } from '../styles/ui';
+import Select from './ui/Select';
 
 interface Props {
   data: LineGraphData;
@@ -122,7 +124,7 @@ export default function LineInput({ data, onChange }: Props) {
           <label style={styles.label}>계열</label>
           <div style={styles.btnGroup}>
             <button onClick={removeSeries} style={styles.smallBtn} disabled={data.series.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.series.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.series.length}개</span>
             <button onClick={addSeries} style={styles.smallBtn} disabled={data.series.length >= MAX_SERIES}>+</button>
           </div>
         </div>
@@ -134,36 +136,36 @@ export default function LineInput({ data, onChange }: Props) {
               onChange={(e) => updateSeries(i, { label: e.target.value })}
               style={{ ...styles.cellInput, width: 56, textAlign: 'center' }}
             />
-            <select
+            <Select
               value={s.lineStyle ?? LINE_STYLE_ORDER[i % LINE_STYLE_ORDER.length]}
               onChange={(e) => updateSeries(i, { lineStyle: e.target.value as LineStyle })}
               style={styles.select}
             >
               {LINE_STYLE_ORDER.map((st) => <option key={st} value={st}>{STYLE_LABELS[st]}</option>)}
-            </select>
-            <select
+            </Select>
+            <Select
               value={s.lineWidth ?? 2}
               onChange={(e) => updateSeries(i, { lineWidth: Number(e.target.value) })}
               style={styles.select}
             >
               {WIDTHS.map((w) => <option key={w.value} value={w.value}>{w.label}</option>)}
-            </select>
-            <select
+            </Select>
+            <Select
               value={s.stroke ?? '#000'}
               onChange={(e) => updateSeries(i, { stroke: e.target.value })}
               style={styles.select}
             >
               {STROKES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <select
+            </Select>
+            <Select
               value={s.marker ?? LINE_MARKER_ORDER[i % LINE_MARKER_ORDER.length]}
               onChange={(e) => updateSeries(i, { marker: e.target.value as LineMarker })}
               style={styles.select}
               disabled={!data.showMarkers}
-              title={data.showMarkers ? '' : '아래 「마커 표시」를 켜면 쓸 수 있습니다'}
+              title={data.showMarkers ? '' : '아래 「마커 표시」를 켜면 쓸 수 있어요'}
             >
               {LINE_MARKER_ORDER.map((m) => <option key={m} value={m}>{MARKER_LABELS[m]}</option>)}
-            </select>
+            </Select>
             <label style={styles.toggleRow} title="기호 속을 비웁니다">
               <input
                 type="checkbox"
@@ -180,10 +182,10 @@ export default function LineInput({ data, onChange }: Props) {
       {/* 자료 표 */}
       <section style={styles.section}>
         <div style={styles.headerRow}>
-          <label style={styles.label}>자료 (x 이름을 비우면 라벨·격자 생략, 값을 비우면 선 끊김)</label>
+          <label style={styles.label}>자료 (x 이름을 비우면 라벨과 격자를 건너뛰고, 값을 비우면 선이 끊겨요)</label>
           <div style={styles.btnGroup}>
             <button onClick={removeRow} style={styles.smallBtn} disabled={n <= 2}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{n}칸</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{n}칸</span>
             <button onClick={addRow} style={styles.smallBtn}>+</button>
           </div>
         </div>
@@ -233,8 +235,7 @@ export default function LineInput({ data, onChange }: Props) {
               onClick={() => onChange({ ...data, labelPlacement: p })}
               style={{
                 ...styles.modeBtn,
-                background: data.labelPlacement === p ? '#1B2A4A' : '#fff',
-                color: data.labelPlacement === p ? '#fff' : '#374151',
+                ...seg(data.labelPlacement === p),
               }}
             >
               {PLACEMENT_LABELS[p]}
@@ -242,24 +243,24 @@ export default function LineInput({ data, onChange }: Props) {
           ))}
         </div>
         {data.labelPlacement === 'legend' && (
-          <p style={styles.hint}>범례 상자는 위 공통 옵션의 「범례 표시」·「범례 위치」를 따릅니다.</p>
+          <p style={styles.hint}>범례 상자는 위의 「범례 표시」와 「범례 위치」를 따라요.</p>
         )}
         {data.labelPlacement === 'rightLeader' && (
-          <p style={styles.hint}>이름을 그래프 오른쪽 바깥에 한 줄로 세우고, 선 끝에서 유도선으로 잇습니다.</p>
+          <p style={styles.hint}>이름을 그래프 오른쪽 바깥에 한 줄로 세우고, 선 끝에서 유도선으로 이어요.</p>
         )}
         {data.labelPlacement === 'leader' && data.series.map((s, i) => {
           const leader = leaderOf(s);
           return (
             <div key={i} style={styles.leaderRow}>
               <span style={styles.leaderName}>{s.label}</span>
-              <select
+              <Select
                 value={Math.min(n - 1, Math.max(0, leader.at))}
                 onChange={(e) => updateSeries(i, { leader: { ...leader, at: Number(e.target.value) } })}
                 style={styles.select}
                 title="가리킬 점"
               >
                 {data.xLabels.map((l, k) => <option key={k} value={k}>{l || `#${k + 1}`}</option>)}
-              </select>
+              </Select>
               <span style={styles.sliderLabel}>dx</span>
               <input
                 type="range" min={-120} max={120} value={leader.dx}
@@ -308,8 +309,7 @@ export default function LineInput({ data, onChange }: Props) {
               onClick={() => onChange({ ...data, frame: f })}
               style={{
                 ...styles.modeBtn,
-                background: (data.frame ?? 'closed') === f ? '#1B2A4A' : '#fff',
-                color: (data.frame ?? 'closed') === f ? '#fff' : '#374151',
+                ...seg((data.frame ?? 'closed') === f),
               }}
             >
               {f === 'closed' ? '닫힌 틀(사각)' : '열린 틀(L자)'}
@@ -337,7 +337,7 @@ export default function LineInput({ data, onChange }: Props) {
 
       {/* 격자·기타 */}
       <section style={styles.section}>
-        <label style={styles.label}>격자·기타</label>
+        <label style={styles.label}>격자와 기타</label>
         <div style={styles.checkGrid}>
           <label style={styles.toggleRow}>
             <input type="checkbox" checked={data.xGrid ?? false} onChange={(e) => onChange({ ...data, xGrid: e.target.checked })} />
@@ -369,7 +369,7 @@ export default function LineInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: { marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #E5E7EB' },
   label: { display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 4 },
   small: { fontSize: 12, color: '#6B7280' },
@@ -406,4 +406,4 @@ const styles: Record<string, React.CSSProperties> = {
     width: 70, padding: '3px 5px', border: '1px solid #E5E7EB', borderRadius: 4, fontSize: 12,
     fontFamily: "'JetBrains Mono', monospace", textAlign: 'right' as const, outline: 'none',
   },
-};
+});

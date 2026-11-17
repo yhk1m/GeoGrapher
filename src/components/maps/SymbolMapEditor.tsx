@@ -20,6 +20,8 @@ import {
   createDefaultSymbolMapState,
   createDefaultItem,
 } from './types';
+import { withUi } from '../../styles/ui';
+import Select from '../ui/Select';
 
 type GeoFC = import('geojson').FeatureCollection<import('geojson').Geometry, RegionProps>;
 const geoCache = new Map<MapUnit, GeoFC>();
@@ -61,7 +63,7 @@ export default function SymbolMapEditor() {
 
   const handleUnitChange = (unit: MapUnit) => {
     if (Object.keys(state.data).length > 0) {
-      if (!window.confirm('행정구역 단위를 바꾸면 입력한 데이터가 초기화됩니다. 계속할까요?')) return;
+      if (!window.confirm('행정구역 단위를 바꾸면 넣은 자료가 모두 지워져요. 바꿀까요?')) return;
     }
     setState((s) => ({ ...s, unit, data: {}, positionOverrides: {} }));
   };
@@ -103,7 +105,7 @@ export default function SymbolMapEditor() {
   };
 
   const handleClearData = () => {
-    if (!window.confirm('입력한 모든 데이터를 삭제할까요?')) return;
+    if (!window.confirm('넣은 자료를 모두 지울까요?')) return;
     setState((s) => ({ ...s, data: {}, positionOverrides: {} }));
   };
 
@@ -131,22 +133,22 @@ export default function SymbolMapEditor() {
         const result = applyCsvToData(parsed, regions, state.items);
         if (result.matched === 0) {
           alert(
-            'CSV에서 일치하는 지역을 찾지 못했습니다.\n' +
-            '첫 번째 열은 지역코드 또는 지역명이어야 합니다.',
+            'CSV에서 지도의 지역과 맞는 이름을 찾지 못했어요.\n' +
+            '첫 번째 열에 지역 코드나 지역 이름을 넣어 주세요.',
           );
           return;
         }
         setState((s) => ({ ...s, data: result.data }));
-        const msg = `${result.matched}개 지역 데이터 반영 완료.` +
+        const msg = `${result.matched}개 지역에 자료를 넣었어요.` +
           (result.unmatched.length > 0
             ? `\n\n매칭 실패 (${result.unmatched.length}건):\n${result.unmatched.slice(0, 10).join(', ')}${result.unmatched.length > 10 ? ' …' : ''}`
             : '');
         alert(msg);
       } catch (err) {
-        alert('CSV 파싱 실패: ' + (err instanceof Error ? err.message : String(err)));
+        alert('CSV를 읽지 못했어요: ' + (err instanceof Error ? err.message : String(err)));
       }
     };
-    reader.onerror = () => alert('파일을 읽을 수 없습니다.');
+    reader.onerror = () => alert('파일을 읽지 못했어요. 다시 골라 주세요.');
     reader.readAsText(file, 'utf-8');
   };
 
@@ -172,7 +174,7 @@ export default function SymbolMapEditor() {
 
       <aside style={styles.toolPanel}>
         <Section title="행정구역 단위">
-          <select
+          <Select
             value={state.unit}
             onChange={(e) => handleUnitChange(e.target.value as MapUnit)}
             style={styles.select}
@@ -180,11 +182,11 @@ export default function SymbolMapEditor() {
             {(Object.keys(MAP_UNIT_LABELS) as MapUnit[]).map((u) => (
               <option key={u} value={u}>{MAP_UNIT_LABELS[u]}</option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="심볼 종류">
-          <select
+          <Select
             value={state.symbolKind}
             onChange={(e) => setState((s) => ({ ...s, symbolKind: e.target.value as SymbolKind }))}
             style={styles.select}
@@ -192,11 +194,11 @@ export default function SymbolMapEditor() {
             {(Object.keys(SYMBOL_KIND_LABELS) as SymbolKind[]).map((k) => (
               <option key={k} value={k}>{SYMBOL_KIND_LABELS[k]}</option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="채우기 모드">
-          <select
+          <Select
             value={state.fillMode}
             onChange={(e) => setState((s) => ({ ...s, fillMode: e.target.value as FillMode }))}
             style={styles.select}
@@ -204,20 +206,20 @@ export default function SymbolMapEditor() {
             {(Object.keys(FILL_MODE_LABELS) as FillMode[]).map((m) => (
               <option key={m} value={m}>{FILL_MODE_LABELS[m]}</option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         {state.symbolKind === 'pie' && (
           <>
             <Section title="크기 모드">
-              <select
+              <Select
                 value={state.sizeMode}
                 onChange={(e) => setState((s) => ({ ...s, sizeMode: e.target.value as SymbolSizeMode }))}
                 style={styles.select}
               >
                 <option value="uniform">균일</option>
                 <option value="proportional">총합 비례</option>
-              </select>
+              </Select>
             </Section>
             {state.sizeMode === 'uniform' ? (
               <Section title={`반지름: ${state.baseRadius}px`}>
@@ -408,7 +410,7 @@ function ItemRow({
         )}
       </div>
       {showPattern && (
-        <select
+        <Select
           value={item.pattern}
           onChange={(e) => onChange({ pattern: e.target.value as PatternKind })}
           style={styles.patternSelect}
@@ -416,7 +418,7 @@ function ItemRow({
           {PATTERN_ORDER.map((p) => (
             <option key={p} value={p}>{PATTERN_LABELS[p]}</option>
           ))}
-        </select>
+        </Select>
       )}
     </div>
   );
@@ -447,7 +449,7 @@ function DataTable({
                 type="button"
                 onClick={onToggleSort}
                 style={styles.sortBtn}
-                title={sortOrder === 'asc' ? '오름차순 (가나다) — 클릭 시 내림차순' : '내림차순 — 클릭 시 오름차순'}
+                title={sortOrder === 'asc' ? '가나다순이에요. 누르면 거꾸로 정렬해요' : '거꾸로 정렬했어요. 누르면 가나다순으로 정렬해요'}
               >
                 지역 {sortOrder === 'asc' ? '▲' : '▼'}
               </button>
@@ -483,7 +485,7 @@ function DataTable({
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   wrap: {
     position: 'relative' as const,
     width: '100%',
@@ -599,7 +601,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none', background: 'transparent', fontFamily: 'monospace',
     boxSizing: 'border-box' as const, textAlign: 'right' as const,
   },
-};
+});
 
 // ─────────────────────────────────────────────────────────
 // CSV 유틸

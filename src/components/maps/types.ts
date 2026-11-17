@@ -9,9 +9,9 @@ export type MapUnit =
   | 'world_pacific';
 
 export const MAP_UNIT_LABELS: Record<MapUnit, string> = {
-  sido: '시·도 (17)',
-  sigungu: '시·군·구 (전체)',
-  sigungu_metro_merged: '시·군·구 (광역 통합)',
+  sido: '시도 (17)',
+  sigungu: '시군구 (전체)',
+  sigungu_metro_merged: '시군구 (광역시 통합)',
   world_atlantic: '세계 (대서양 중심)',
   world_pacific: '세계 (태평양 중심)',
 };
@@ -115,9 +115,9 @@ export const PALETTES: Record<Exclude<PaletteKind, 'custom'>, string[]> = {
 };
 
 export const PALETTE_LABELS: Record<PaletteKind, string> = {
-  sequential_blue: '순차형 — 파랑',
-  sequential_red: '순차형 — 빨강',
-  sequential_green: '순차형 — 초록',
+  sequential_blue: '순차형, 파랑',
+  sequential_red: '순차형, 빨강',
+  sequential_green: '순차형, 초록',
   grayscale: '흑백 명도형',
   diverging: '발산형',
   custom: '사용자 지정',

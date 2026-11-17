@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type TernaryGraphData, type TernaryGridInterval } from '../data/types';
+import { withUi } from '../styles/ui';
 
 interface Props {
   data: TernaryGraphData;
@@ -112,7 +113,7 @@ export default function TernaryInput({ data, onChange }: Props) {
           <label style={styles.label}>데이터 포인트</label>
           <div style={styles.btnGroup}>
             <button onClick={removePoint} style={styles.smallBtn} disabled={data.points.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.points.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.points.length}개</span>
             <button onClick={addPoint} style={styles.smallBtn}>+</button>
           </div>
         </div>
@@ -180,7 +181,7 @@ export default function TernaryInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -290,4 +291,4 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#9CA3AF',
     textAlign: 'center' as const,
   },
-};
+});

@@ -54,12 +54,18 @@ export default function Header({
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const icon = (d: string, size = 18) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden dangerouslySetInnerHTML={{ __html: d }} />
+  );
+
   return (
     <header style={styles.header}>
       <div style={styles.logo}>GeoGrapher</div>
       {viewCount && (
         <span style={styles.viewCount}>
-          today <strong>{viewCount.today}</strong> / total <strong>{viewCount.total}</strong>
+          오늘 <strong style={styles.viewNum}>{viewCount.today.toLocaleString()}</strong>
+          <span style={{ marginLeft: 8 }}>전체</span> <strong style={styles.viewNum}>{viewCount.total.toLocaleString()}</strong>
         </span>
       )}
 
@@ -67,40 +73,55 @@ export default function Header({
 
       <div style={styles.actions}>
         <span style={styles.copyright}>
-          © 2026. 양정고등학교 김용현. All Rights Reserved. | <a href="https://bgnl.kr" target="_blank" rel="noopener noreferrer" style={styles.copyrightLink}>https://bgnl.kr</a>
+          © 2026. 양정고등학교 김용현. All Rights Reserved. <a href="https://bgnl.kr" target="_blank" rel="noopener noreferrer" style={styles.copyrightLink}>bgnl.kr</a>
         </span>
-        <button onClick={onToggleDrawer} style={styles.actionBtn} title={drawerOpen ? '드로어 닫기' : '드로어 열기'}>
-          {drawerOpen ? '✕' : '☰'}
-        </button>
-        {/* 그래프 선택 드롭다운 */}
+        {/* 그래프 고르기 */}
         <div ref={dropdownRef} style={styles.dropdownWrap}>
-          <button onClick={() => setOpen((v) => !v)} style={styles.dropdownBtn}>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            style={styles.dropdownBtn}
+            aria-haspopup="menu"
+            aria-expanded={open}
+          >
             {GRAPH_LABELS[graphType]}
-            <span style={{ marginLeft: 6, fontSize: 10 }}>▼</span>
+            <span style={{ display: 'inline-flex', transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 150ms ease' }}>
+              {icon('<polyline points="6 9 12 15 18 9"/>', 16)}
+            </span>
           </button>
           {open && (
-            <div style={styles.dropdownMenu}>
+            <div style={styles.dropdownMenu} role="menu">
               {MENU_ITEMS.map((type, idx) => (
                 <div key={type}>
-                  {idx === 1 && <div style={styles.separator} />}
-                  {type === MAP_SECTION_START && <div style={styles.separator} />}
+                  {idx === 1 && <div style={styles.groupTitle}>그래프</div>}
+                  {type === MAP_SECTION_START && <div style={styles.groupTitle}>지도</div>}
                   <button
+                    role="menuitemradio"
+                    aria-checked={graphType === type}
                     onClick={() => { onGraphTypeChange(type); setOpen(false); }}
-                    style={{
-                      ...styles.menuItem,
-                      background: graphType === type ? '#1B2A4A' : '#fff',
-                      color: graphType === type ? '#fff' : '#374151',
-                    }}
+                    style={{ ...styles.menuItem, ...(graphType === type ? styles.menuItemOn : null) }}
+                    className="gg-menu-item"
                   >
-                    {GRAPH_LABELS[type]}
+                    <span style={{ flex: 1 }}>{GRAPH_LABELS[type]}</span>
+                    {graphType === type && icon('<polyline points="20 6 9 17 4 12"/>', 16)}
                   </button>
                 </div>
               ))}
             </div>
           )}
         </div>
+        <button
+          onClick={onToggleDrawer}
+          style={styles.actionBtn}
+          className="gg-on-brand"
+          title={drawerOpen ? '입력 칸 닫기' : '입력 칸 열기'}
+          aria-label={drawerOpen ? '입력 칸 닫기' : '입력 칸 열기'}
+          aria-pressed={drawerOpen}
+        >
+          {icon('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>')}
+        </button>
         <button onClick={onExport} style={styles.exportBtn}>
-          PNG
+          {icon('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', 16)}
+          PNG 저장
         </button>
       </div>
     </header>
@@ -111,102 +132,118 @@ const styles: Record<string, React.CSSProperties> = {
   header: {
     display: 'flex',
     alignItems: 'center',
-    height: 48,
+    height: 52,
     padding: '0 16px',
-    background: '#1B2A4A',
-    color: '#fff',
-    gap: 12,
+    background: 'var(--brand)',
+    color: 'var(--on-brand)',
+    gap: 16,
     flexShrink: 0,
   },
-  viewCount: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    whiteSpace: 'nowrap' as const,
-    letterSpacing: '0.02em',
-  },
   logo: {
-    fontWeight: 700,
-    fontSize: 16,
-    letterSpacing: '-0.02em',
+    fontWeight: 600,
+    fontSize: 17,
+    letterSpacing: '-0.3px',
     whiteSpace: 'nowrap',
   },
-  dropdownWrap: {
-    position: 'relative' as const,
+  viewCount: {
+    fontSize: 12,
+    color: 'var(--on-brand-muted)',
+    whiteSpace: 'nowrap',
   },
-  dropdownBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '6px 14px',
-    borderRadius: 6,
-    border: '1px solid rgba(255,255,255,0.25)',
-    background: 'rgba(255,255,255,0.1)',
-    color: '#fff',
-    fontSize: 13,
+  viewNum: {
     fontWeight: 600,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap' as const,
-  },
-  dropdownMenu: {
-    position: 'absolute' as const,
-    top: '100%',
-    left: 0,
-    marginTop: 4,
-    background: '#fff',
-    borderRadius: 8,
-    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-    padding: 4,
-    zIndex: 200,
-    minWidth: 180,
-  },
-  separator: {
-    height: 1,
-    background: '#E5E7EB',
-    margin: '4px 8px',
-  },
-  menuItem: {
-    display: 'block',
-    width: '100%',
-    padding: '8px 14px',
-    borderRadius: 4,
-    border: 'none',
-    fontSize: 13,
-    fontWeight: 500,
-    textAlign: 'left' as const,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap' as const,
+    color: 'var(--on-brand)',
+    fontVariantNumeric: 'tabular-nums',
   },
   copyright: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    whiteSpace: 'nowrap' as const,
+    fontSize: 12,
+    color: 'var(--on-brand-muted)',
+    whiteSpace: 'nowrap',
   },
   copyrightLink: {
-    color: '#fff',
+    color: 'var(--on-brand)',
     textDecoration: 'none',
+    marginLeft: 4,
   },
   actions: {
     display: 'flex',
     gap: 8,
     alignItems: 'center',
   },
+  dropdownWrap: {
+    position: 'relative',
+  },
+  dropdownBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    padding: '0 10px 0 14px',
+    borderRadius: 'var(--r-control)',
+    background: 'rgba(255,255,255,0.12)',
+    color: 'var(--on-brand)',
+    fontSize: 13,
+    fontWeight: 600,
+    whiteSpace: 'nowrap',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: 6,
+    background: 'var(--surface)',
+    borderRadius: 'var(--r-card)',
+    boxShadow: 'var(--shadow-3), 0 0 0 1px var(--line)',
+    padding: 4,
+    zIndex: 200,
+    minWidth: 220,
+    maxHeight: 'calc(100vh - 72px)',
+    overflowY: 'auto',
+  },
+  groupTitle: {
+    padding: '10px 10px 4px',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--muted)',
+  },
+  menuItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    minHeight: 34,
+    padding: '0 10px',
+    borderRadius: 6,
+    fontSize: 13,
+    color: 'var(--ink)',
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+  },
+  menuItemOn: {
+    background: 'var(--accent-weak)',
+    color: 'var(--accent-text)',
+    fontWeight: 600,
+  },
   actionBtn: {
-    color: '#fff',
-    fontSize: 16,
-    padding: '4px 8px',
-    borderRadius: 4,
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
+    width: 36,
+    height: 36,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 'var(--r-control)',
+    color: 'var(--on-brand)',
   },
   exportBtn: {
-    background: '#fff',
-    color: '#1B2A4A',
-    fontWeight: 700,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    padding: '0 14px',
+    borderRadius: 'var(--r-control)',
+    background: 'var(--on-brand)',
+    color: 'var(--brand)',
+    fontWeight: 600,
     fontSize: 13,
-    padding: '6px 14px',
-    borderRadius: 6,
-    border: 'none',
-    letterSpacing: '-0.01em',
-    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
 };

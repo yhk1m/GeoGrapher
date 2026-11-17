@@ -15,6 +15,8 @@ import {
   FLOW_ARROW_LABELS,
   createDefaultFlowMapState,
 } from './types';
+import { withUi } from '../../styles/ui';
+import Select from '../ui/Select';
 
 type GeoFC = import('geojson').FeatureCollection<import('geojson').Geometry, RegionProps>;
 const geoCache = new Map<MapUnit, GeoFC>();
@@ -51,7 +53,7 @@ export default function FlowMapEditor() {
 
   const handleUnitChange = (unit: MapUnit) => {
     if (state.flows.length > 0) {
-      if (!window.confirm('행정구역 단위를 바꾸면 흐름 데이터가 초기화됩니다. 계속할까요?')) return;
+      if (!window.confirm('행정구역 단위를 바꾸면 넣은 흐름이 모두 지워져요. 바꿀까요?')) return;
     }
     setState((s) => ({ ...s, unit, flows: [] }));
     setClickMode('idle');
@@ -112,7 +114,7 @@ export default function FlowMapEditor() {
     setState((s) => ({ ...s, flows: s.flows.filter((f) => f.id !== id) }));
   };
   const handleClearFlows = () => {
-    if (!window.confirm('모든 유선을 삭제할까요?')) return;
+    if (!window.confirm('흐름을 모두 지울까요?')) return;
     setState((s) => ({ ...s, flows: [] }));
   };
 
@@ -137,7 +139,7 @@ export default function FlowMapEditor() {
     reader.onload = () => {
       const text = String(reader.result ?? '');
       const parsed = parseCsv(text);
-      if (parsed.length < 2) { alert('CSV에 데이터 행이 없습니다.'); return; }
+      if (parsed.length < 2) { alert('CSV에 자료 줄이 없어요. 둘째 줄부터 자료를 넣어 주세요.'); return; }
       const byCode = new Map(regions.map((r) => [r.code, r]));
       const byName = new Map(regions.map((r) => [r.name.trim(), r]));
       const newFlows: FlowLine[] = [];
@@ -178,11 +180,11 @@ export default function FlowMapEditor() {
         });
       }
       if (newFlows.length === 0) {
-        alert('CSV에서 유효한 흐름을 찾지 못했습니다.');
+        alert('CSV에서 흐름을 찾지 못했어요. 출발지, 도착지, 값 순서인지 확인해 주세요.');
         return;
       }
       setState((s) => ({ ...s, flows: [...s.flows, ...newFlows] }));
-      alert(`${newFlows.length}개 유선 추가됨.${unmatched.length ? `\n매칭 실패: ${unmatched.slice(0, 5).join(', ')}${unmatched.length > 5 ? ' …' : ''}` : ''}`);
+      alert(`${newFlows.length}개 흐름을 넣었어요.${unmatched.length ? `\n매칭 실패: ${unmatched.slice(0, 5).join(', ')}${unmatched.length > 5 ? ' …' : ''}` : ''}`);
     };
     reader.readAsText(file, 'utf-8');
   };
@@ -203,8 +205,8 @@ export default function FlowMapEditor() {
         {clickMode !== 'idle' && (
           <div style={styles.clickHint}>
             {clickMode === 'pickFrom'
-              ? `📍 출발 지역 클릭 · 연속 입력 중 (${state.flows.length}개)`
-              : '🎯 도착 지역을 클릭하세요'}
+              ? `출발 지역을 눌러 주세요. 이어서 넣는 중이에요 (${state.flows.length}개)`
+              : '도착 지역을 눌러 주세요'}
             <button onClick={cancelClickMode} style={styles.cancelBtn}>완료 (Esc)</button>
           </div>
         )}
@@ -212,11 +214,11 @@ export default function FlowMapEditor() {
 
       <aside style={styles.toolPanel}>
         <Section title="행정구역 단위">
-          <select value={state.unit} onChange={(e) => handleUnitChange(e.target.value as MapUnit)} style={styles.select}>
+          <Select value={state.unit} onChange={(e) => handleUnitChange(e.target.value as MapUnit)} style={styles.select}>
             {(Object.keys(MAP_UNIT_LABELS) as MapUnit[]).map((u) => (
               <option key={u} value={u}>{MAP_UNIT_LABELS[u]}</option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="기본 색상">
@@ -226,13 +228,13 @@ export default function FlowMapEditor() {
         </Section>
 
         <Section title="선 종류">
-          <select value={state.curveType}
+          <Select value={state.curveType}
             onChange={(e) => setState((s) => ({ ...s, curveType: e.target.value as FlowCurveType }))}
             style={styles.select}>
             {(Object.keys(FLOW_CURVE_LABELS) as FlowCurveType[]).map((k) => (
               <option key={k} value={k}>{FLOW_CURVE_LABELS[k]}</option>
             ))}
-          </select>
+          </Select>
           {state.curveType === 'bezier' && (
             <>
               <div style={styles.sectionTitle}>곡률: {state.bezierCurvature.toFixed(2)}</div>
@@ -244,13 +246,13 @@ export default function FlowMapEditor() {
         </Section>
 
         <Section title="화살표">
-          <select value={state.arrowStyle}
+          <Select value={state.arrowStyle}
             onChange={(e) => setState((s) => ({ ...s, arrowStyle: e.target.value as FlowArrowStyle }))}
             style={styles.select}>
             {(Object.keys(FLOW_ARROW_LABELS) as FlowArrowStyle[]).map((k) => (
               <option key={k} value={k}>{FLOW_ARROW_LABELS[k]}</option>
             ))}
-          </select>
+          </Select>
         </Section>
 
         <Section title="선 굵기">
@@ -323,7 +325,7 @@ export default function FlowMapEditor() {
           <div style={styles.flowList}>
             {state.flows.length === 0 ? (
               <div style={styles.empty}>
-                아직 유선이 없습니다. 위 버튼으로 추가하거나 CSV를 불러오세요.
+                아직 흐름이 없어요. 위 단추로 넣거나 CSV를 불러와 주세요.
               </div>
             ) : (
               state.flows.map((f) => (
@@ -371,13 +373,13 @@ function FlowRow({
         <button onClick={onDelete} style={styles.iconBtn} title="삭제">×</button>
       </div>
       <div style={styles.flowRowBody}>
-        <select value={flow.from} onChange={(e) => onChange({ from: e.target.value })} style={styles.miniSelect}>
+        <Select value={flow.from} onChange={(e) => onChange({ from: e.target.value })} style={styles.miniSelect}>
           {regions.map((r) => (<option key={r.code} value={r.code}>{r.name}</option>))}
-        </select>
+        </Select>
         <span style={styles.arrow}>→</span>
-        <select value={flow.to} onChange={(e) => onChange({ to: e.target.value })} style={styles.miniSelect}>
+        <Select value={flow.to} onChange={(e) => onChange({ to: e.target.value })} style={styles.miniSelect}>
           {regions.map((r) => (<option key={r.code} value={r.code}>{r.name}</option>))}
-        </select>
+        </Select>
       </div>
       <div style={styles.flowRowBody}>
         <input
@@ -437,7 +439,7 @@ function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   wrap: {
     position: 'relative' as const,
     width: '100%',
@@ -521,4 +523,4 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)',
     padding: '3px 10px', fontSize: 11, borderRadius: 4, cursor: 'pointer',
   },
-};
+});

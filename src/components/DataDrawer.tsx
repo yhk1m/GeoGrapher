@@ -33,6 +33,7 @@ import HythergraphInput from './HythergraphInput';
 import CubeInput from './CubeInput';
 import RadarInput from './RadarInput';
 import LineInput from './LineInput';
+import { withUi, seg } from '../styles/ui';
 
 interface DataDrawerProps {
   open: boolean;
@@ -162,8 +163,7 @@ export default function DataDrawer({
                 onClick={() => onClimateModeChange(mode)}
                 style={{
                   ...styles.modeBtn,
-                  background: climateMode === mode ? '#1B2A4A' : '#fff',
-                  color: climateMode === mode ? '#fff' : '#374151',
+                  ...seg(climateMode === mode),
                 }}
               >
                 {MODE_LABELS[mode]}
@@ -183,8 +183,7 @@ export default function DataDrawer({
               onClick={() => onOptionsChange(switchStyle(options, st))}
               style={{
                 ...styles.modeBtn,
-                background: (options.style ?? 'exam') === st ? '#1B2A4A' : '#fff',
-                color: (options.style ?? 'exam') === st ? '#fff' : '#374151',
+                ...seg((options.style ?? 'exam') === st),
               }}
             >
               {STYLE_LABELS[st]}
@@ -193,8 +192,8 @@ export default function DataDrawer({
         </div>
         <p style={styles.hint}>
           {(options.style ?? 'exam') === 'exam'
-            ? '평가원 시험지의 글꼴·선 굵기를 따릅니다. 한컴오피스 글꼴(HY신명조·HY중고딕)이 있으면 가장 비슷합니다.'
-            : '예전(1.x) GeoGrapher 그림입니다.'}
+            ? '평가원 시험지의 글꼴과 선 굵기를 따라요. 한컴오피스 글꼴(HY신명조, HY중고딕)이 있으면 가장 비슷해요.'
+            : '예전(1.x) GeoGrapher 그림이에요.'}
         </p>
         {TICK_TYPES.includes(graphType) && !(graphType === 'stacked' && stackedData.displayMode === 'pie') && (
           <>
@@ -206,8 +205,7 @@ export default function DataDrawer({
                   onClick={() => onOptionsChange({ ...options, tickDirection: value })}
                   style={{
                     ...styles.modeBtn,
-                    background: options.tickDirection === value ? '#1B2A4A' : '#fff',
-                    color: options.tickDirection === value ? '#fff' : '#374151',
+                    ...seg(options.tickDirection === value),
                   }}
                 >
                   {label}
@@ -289,8 +287,7 @@ export default function DataDrawer({
               onClick={() => onOptionsChange({ ...options, fontFamily: f })}
               style={{
                 ...styles.modeBtn,
-                background: options.fontFamily === f ? '#1B2A4A' : '#fff',
-                color: options.fontFamily === f ? '#fff' : '#374151',
+                ...seg(options.fontFamily === f),
               }}
             >
               {f === 'serif' ? '세리프' : f === 'sans' ? '산세리프' : '사용자 지정'}
@@ -341,8 +338,7 @@ export default function DataDrawer({
                   onClick={() => onOptionsChange({ ...options, legendPosition: pos })}
                   style={{
                     ...styles.modeBtn,
-                    background: (options.legendPosition ?? 'bottom') === pos ? '#1B2A4A' : '#fff',
-                    color: (options.legendPosition ?? 'bottom') === pos ? '#fff' : '#374151',
+                    ...seg((options.legendPosition ?? 'bottom') === pos),
                   }}
                 >
                   {pos === 'bottom' ? '아래' : '오른쪽'}
@@ -382,8 +378,7 @@ export default function DataDrawer({
                 onClick={() => onOptionsChange({ ...options, legendPosition: pos })}
                 style={{
                   ...styles.modeBtn,
-                  background: (options.legendPosition ?? 'right') === pos ? '#1B2A4A' : '#fff',
-                  color: (options.legendPosition ?? 'right') === pos ? '#fff' : '#374151',
+                  ...seg((options.legendPosition ?? 'right') === pos),
                 }}
               >
                 {pos === 'bottom' ? '아래로' : '오른쪽으로'}
@@ -432,14 +427,14 @@ export default function DataDrawer({
       )}
       {graphType !== 'climate' && graphType !== 'pyramid' && graphType !== 'ternary' && graphType !== 'stacked' && graphType !== 'absbar' && graphType !== 'line' && graphType !== 'scatter' && graphType !== 'hythergraph' && graphType !== 'cube' && graphType !== 'radar' && (
         <div style={styles.placeholder}>
-          이 그래프 유형은 아직 준비 중입니다.
+          이 그래프는 아직 만들고 있어요.
         </div>
       )}
     </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   drawer: {
     flexShrink: 0,
     background: '#F8F9FA',
@@ -520,4 +515,4 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#9CA3AF',
     fontSize: 13,
   },
-};
+});

@@ -1,6 +1,7 @@
 // © 2026 김용현
 import { useState } from 'react';
 import { type RadarGraphData } from '../data/types';
+import { withUi, seg } from '../styles/ui';
 
 interface Props {
   data: RadarGraphData;
@@ -69,7 +70,7 @@ export default function RadarInput({ data, onChange }: Props) {
           <label style={styles.label}>축 개수</label>
           <div style={styles.btnGroup}>
             <button onClick={() => setAxisCount(n - 1)} style={styles.smallBtn} disabled={n <= 3}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{n}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{n}개</span>
             <button onClick={() => setAxisCount(n + 1)} style={styles.smallBtn} disabled={n >= 12}>+</button>
           </div>
         </div>
@@ -103,7 +104,7 @@ export default function RadarInput({ data, onChange }: Props) {
           </div>
         )}
         <div style={{ ...styles.row, marginTop: 8 }}>
-          <span style={{ fontSize: 12, color: '#6B7280' }}>눈금 수</span>
+          <span style={{ fontSize: 12, color: 'var(--muted)' }}>눈금 수</span>
           <input type="number" value={data.gridSteps} onChange={(e) => onChange({ ...data, gridSteps: Math.max(2, Math.min(10, parseInt(e.target.value) || 5)) })} style={styles.numInput} min={2} max={10} />
         </div>
         <label style={{ ...styles.toggleRow, marginTop: 8 }}>
@@ -118,7 +119,7 @@ export default function RadarInput({ data, onChange }: Props) {
           <label style={styles.label}>계열</label>
           <div style={styles.btnGroup}>
             <button onClick={removeSeries} style={styles.smallBtn} disabled={data.series.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.series.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.series.length}개</span>
             <button onClick={addSeries} style={styles.smallBtn} disabled={data.series.length >= 5}>+</button>
           </div>
         </div>
@@ -128,10 +129,9 @@ export default function RadarInput({ data, onChange }: Props) {
               key={i}
               onClick={() => setActiveSeries(i)}
               style={{
-                padding: '4px 12px', borderRadius: 4, border: '1px solid #D1D5DB',
-                fontSize: 12, fontWeight: activeSeries === i ? 700 : 400,
-                background: activeSeries === i ? '#1B2A4A' : '#fff',
-                color: activeSeries === i ? '#fff' : '#374151', cursor: 'pointer',
+                height: 32, padding: '0 12px', borderRadius: 'var(--r-control)',
+                fontSize: 12, fontWeight: activeSeries === i ? 600 : 400,
+                ...seg(activeSeries === i), cursor: 'pointer',
               }}
             >
               {s.label}
@@ -162,7 +162,7 @@ export default function RadarInput({ data, onChange }: Props) {
           <tbody>
             {data.axisLabels.map((label, i) => (
               <tr key={i}>
-                <td style={{ ...styles.td, fontWeight: 600, color: '#374151', textAlign: 'left' }}>{label}</td>
+                <td style={{ ...styles.td, fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>{label}</td>
                 <td style={styles.td}>
                   <input
                     type="number"
@@ -181,7 +181,7 @@ export default function RadarInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: { marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #E5E7EB' },
   label: { display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 4 },
   toggleRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, cursor: 'pointer' },
@@ -195,4 +195,4 @@ const styles: Record<string, React.CSSProperties> = {
   th: { padding: '6px 4px', borderBottom: '2px solid #E5E7EB', textAlign: 'center' as const, fontSize: 11, fontWeight: 600, color: '#6B7280' },
   td: { padding: '3px 4px', borderBottom: '1px solid #F3F4F6', textAlign: 'center' as const, whiteSpace: 'nowrap' as const },
   cellInput: { width: 80, padding: '3px 5px', border: '1px solid #E5E7EB', borderRadius: 4, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", textAlign: 'right' as const, outline: 'none' },
-};
+});

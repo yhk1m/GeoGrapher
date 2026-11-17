@@ -1,5 +1,6 @@
 // © 2026 김용현
 import { type ClimateGraphData, type MonthInterval } from '../data/types';
+import { withUi } from '../styles/ui';
 
 interface ClimateInputProps {
   data: ClimateGraphData;
@@ -127,7 +128,7 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
                 style={styles.numInput}
                 placeholder="최대"
               />
-              <span style={{ marginLeft: 6, fontSize: 12, color: '#6B7280' }}>단위</span>
+              <span style={{ marginLeft: 6, fontSize: 12, color: 'var(--muted)' }}>단위</span>
               <input
                 type="number"
                 value={data.tempRange.step ?? ''}
@@ -169,7 +170,7 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
                 style={styles.numInput}
                 placeholder="최대"
               />
-              <span style={{ marginLeft: 6, fontSize: 12, color: '#6B7280' }}>단위</span>
+              <span style={{ marginLeft: 6, fontSize: 12, color: 'var(--muted)' }}>단위</span>
               <input
                 type="number"
                 value={data.precipRange.step ?? ''}
@@ -234,7 +235,7 @@ export default function ClimateInput({ data, onChange }: ClimateInputProps) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: {
     marginBottom: 16,
     paddingBottom: 16,
@@ -334,4 +335,4 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'right' as const,
     outline: 'none',
   },
-};
+});

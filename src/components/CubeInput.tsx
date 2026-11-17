@@ -1,5 +1,7 @@
 // © 2026 김용현
 import { type CubeGraphData, type CubeAxisConfig, type LabelOffset } from '../data/types';
+import { withUi } from '../styles/ui';
+import Select from './ui/Select';
 
 interface Props {
   data: CubeGraphData;
@@ -52,7 +54,7 @@ export default function CubeInput({ data, onChange }: Props) {
           </div>
           <div style={{ ...styles.row, marginTop: 4 }}>
             <input type="text" value={data[axis].lowLabel} onChange={(e) => updateAxis(axis, 'lowLabel', e.target.value)} placeholder="낮음" style={{ ...styles.input, flex: 1 }} />
-            <span style={{ fontSize: 11, color: '#9CA3AF' }}>↔</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>↔</span>
             <input type="text" value={data[axis].highLabel} onChange={(e) => updateAxis(axis, 'highLabel', e.target.value)} placeholder="높음" style={{ ...styles.input, flex: 1 }} />
           </div>
           {/* 라벨 위치 조정 */}
@@ -87,11 +89,11 @@ export default function CubeInput({ data, onChange }: Props) {
           <label style={styles.label}>데이터 포인트</label>
           <div style={styles.btnGroup}>
             <button onClick={removePoint} style={styles.smallBtn} disabled={data.points.length <= 1}>−</button>
-            <span style={{ fontSize: 12, color: '#6B7280' }}>{data.points.length}개</span>
+            <span style={{ fontSize: 12, color: 'var(--muted)' }}>{data.points.length}개</span>
             <button onClick={addPoint} style={styles.smallBtn}>+</button>
           </div>
         </div>
-        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 6 }}>각 값은 0 또는 1</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>각 값은 0 또는 1</div>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -109,14 +111,14 @@ export default function CubeInput({ data, onChange }: Props) {
                 </td>
                 {(['x', 'y', 'z'] as const).map((field) => (
                   <td key={field} style={styles.td}>
-                    <select
+                    <Select
                       value={pt[field]}
                       onChange={(e) => updatePoint(i, field, Number(e.target.value))}
                       style={styles.selectInput}
                     >
                       <option value={0}>0</option>
                       <option value={1}>1</option>
-                    </select>
+                    </Select>
                   </td>
                 ))}
               </tr>
@@ -128,8 +130,8 @@ export default function CubeInput({ data, onChange }: Props) {
         <div style={{ marginTop: 12 }}>
           <label style={styles.label}>유도선 위치 조정</label>
           {data.points.map((pt, i) => (
-            <div key={i} style={{ marginBottom: 8, padding: '6px 8px', background: '#F8F9FA', borderRadius: 4 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#374151', marginBottom: 4 }}>{pt.label}</div>
+            <div key={i} style={{ marginBottom: 8, padding: '6px 8px', background: 'var(--bg)', borderRadius: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{pt.label}</div>
               <div style={styles.sliderRow}>
                 <span style={styles.sliderLabel}>X</span>
                 <input type="range" min={-80} max={80} value={pt.labelDx} onChange={(e) => { const points = data.points.map((p, j) => j === i ? { ...p, labelDx: Number(e.target.value) } : p); onChange({ ...data, points }); }} style={styles.slider} />
@@ -148,7 +150,7 @@ export default function CubeInput({ data, onChange }: Props) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   section: { marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #E5E7EB' },
   label: { display: 'block', fontSize: 12, fontWeight: 500, color: '#6B7280', marginBottom: 4 },
   row: { display: 'flex', gap: 6, alignItems: 'center' },
@@ -165,4 +167,4 @@ const styles: Record<string, React.CSSProperties> = {
   sliderLabel: { fontSize: 10, color: '#9CA3AF', width: 36, flexShrink: 0 },
   slider: { flex: 1, height: 4, cursor: 'pointer' },
   sliderVal: { fontSize: 10, color: '#9CA3AF', width: 24, textAlign: 'right' as const },
-};
+});

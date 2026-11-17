@@ -149,14 +149,14 @@ export default function MapCanvas({
       {geo.status === 'error' ? (
         <Placeholder
           error
-          message={`GeoJSON을 찾을 수 없습니다 (${geo.message}).`}
+          message={`지도 경계 자료를 받지 못했어요. 새로고침해 주세요 (${geo.message}).`}
         />
       ) : geo.status !== 'ready' || svgW === 0 || !pathFn ? (
         <Placeholder message="지도 데이터를 불러오는 중…" />
       ) : svgH < 200 ? (
         <Placeholder
           error
-          message={`지도 영역이 너무 작습니다 (${box.w}×${box.h}).\n창 크기를 키워주세요.`}
+          message={`지도 칸이 너무 작아요 (${box.w}×${box.h}).\n창을 넓혀 주세요.`}
         />
       ) : (
         <svg
@@ -200,7 +200,7 @@ export default function MapCanvas({
                 >
                   <title>
                     {(f.properties.name ?? code) +
-                      (binIdx != null ? ` · 등급 ${binIdx + 1}` : '')}
+                      (binIdx != null ? `, 등급 ${binIdx + 1}` : '')}
                   </title>
                 </path>
               );

@@ -12,6 +12,8 @@ import {
   PALETTE_LABELS,
   createDefaultIsolineState,
 } from './types';
+import { withUi } from '../../styles/ui';
+import Select from '../ui/Select';
 
 type GeoFC = import('geojson').FeatureCollection<import('geojson').Geometry, RegionProps>;
 const geoCache = new Map<MapUnit, GeoFC>();
@@ -52,7 +54,7 @@ export default function IsolineEditor() {
 
   const handleUnitChange = (unit: MapUnit) => {
     if (Object.keys(state.values).length > 0) {
-      if (!window.confirm('행정구역 단위를 바꾸면 입력한 값이 초기화됩니다. 계속할까요?')) return;
+      if (!window.confirm('행정구역 단위를 바꾸면 넣은 값이 모두 지워져요. 바꿀까요?')) return;
     }
     setState((s) => ({ ...s, unit, values: {} }));
   };
@@ -72,7 +74,7 @@ export default function IsolineEditor() {
   };
 
   const handleClearValues = () => {
-    if (!window.confirm('입력한 모든 값을 삭제할까요?')) return;
+    if (!window.confirm('넣은 값을 모두 지울까요?')) return;
     setState((s) => ({ ...s, values: {} }));
   };
 
@@ -94,7 +96,7 @@ export default function IsolineEditor() {
     reader.onload = () => {
       const text = String(reader.result ?? '');
       const parsed = parseCsv(text);
-      if (parsed.length < 2) { alert('CSV에 데이터 행이 없습니다.'); return; }
+      if (parsed.length < 2) { alert('CSV에 자료 줄이 없어요. 둘째 줄부터 자료를 넣어 주세요.'); return; }
       const byCode = new Map(regions.map((r) => [r.code, r]));
       const byName = new Map(regions.map((r) => [r.name.trim(), r]));
       const values: Record<string, number> = {};
@@ -120,11 +122,11 @@ export default function IsolineEditor() {
         }
       }
       if (matched === 0) {
-        alert('CSV에서 매칭되는 데이터를 찾지 못했습니다.');
+        alert('CSV에서 지도의 지역과 맞는 이름을 찾지 못했어요. 지역 이름이나 코드를 확인해 주세요.');
         return;
       }
       setState((s) => ({ ...s, values }));
-      alert(`${matched}개 지역 값 반영.${unmatched.length ? `\n매칭 실패: ${unmatched.slice(0, 10).join(', ')}${unmatched.length > 10 ? ' …' : ''}` : ''}`);
+      alert(`${matched}개 지역에 값을 넣었어요.${unmatched.length ? `\n매칭 실패: ${unmatched.slice(0, 10).join(', ')}${unmatched.length > 10 ? ' …' : ''}` : ''}`);
     };
     reader.readAsText(file, 'utf-8');
   };
@@ -143,23 +145,23 @@ export default function IsolineEditor() {
 
       <aside style={styles.toolPanel}>
         <Section title="행정구역 단위">
-          <select value={state.unit} onChange={(e) => handleUnitChange(e.target.value as MapUnit)} style={styles.select}>
+          <Select value={state.unit} onChange={(e) => handleUnitChange(e.target.value as MapUnit)} style={styles.select}>
             {(Object.keys(MAP_UNIT_LABELS) as MapUnit[]).map((u) => (
               <option key={u} value={u}>{MAP_UNIT_LABELS[u]}</option>
             ))}
-          </select>
-          <div style={styles.hint}>각 지역 중심점에 할당된 값으로 보간합니다.</div>
+          </Select>
+          <div style={styles.hint}>지역 가운데에 넣은 값으로 등치선을 그려요.</div>
         </Section>
 
         <Section title="간격 모드">
-          <select
+          <Select
             value={state.intervalMode}
             onChange={(e) => setState((s) => ({ ...s, intervalMode: e.target.value as 'auto' | 'manual' }))}
             style={styles.select}
           >
             <option value="auto">자동 (단계 수 지정)</option>
             <option value="manual">수동 (간격 지정)</option>
-          </select>
+          </Select>
         </Section>
 
         {state.intervalMode === 'auto' ? (
@@ -223,13 +225,13 @@ export default function IsolineEditor() {
             <span>등치선 사이 색 채우기</span>
           </label>
           {state.fillEnabled && (
-            <select value={state.fillPalette}
+            <Select value={state.fillPalette}
               onChange={(e) => setState((s) => ({ ...s, fillPalette: e.target.value as PaletteKind }))}
               style={styles.select}>
               {(Object.keys(PALETTE_LABELS) as PaletteKind[]).filter((p) => p !== 'custom').map((p) => (
                 <option key={p} value={p}>{PALETTE_LABELS[p]}</option>
               ))}
-            </select>
+            </Select>
           )}
         </Section>
 
@@ -294,7 +296,7 @@ export default function IsolineEditor() {
                       type="button"
                       onClick={() => setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'))}
                       style={styles.sortBtn}
-                      title={sortOrder === 'asc' ? '오름차순 (가나다) — 클릭 시 내림차순' : '내림차순 — 클릭 시 오름차순'}
+                      title={sortOrder === 'asc' ? '가나다순이에요. 누르면 거꾸로 정렬해요' : '거꾸로 정렬했어요. 누르면 가나다순으로 정렬해요'}
                     >
                       지역 {sortOrder === 'asc' ? '▲' : '▼'}
                     </button>
@@ -369,7 +371,7 @@ function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0].trim() !== ''));
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = withUi({
   wrap: {
     position: 'relative' as const,
     width: '100%',
@@ -451,4 +453,4 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none', background: 'transparent', fontFamily: 'monospace',
     boxSizing: 'border-box' as const, textAlign: 'right' as const,
   },
-};
+});

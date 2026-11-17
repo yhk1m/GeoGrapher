@@ -202,7 +202,7 @@ export default function SymbolMapCanvas({
   }, [state.data]);
 
   if (geo.status === 'error') {
-    return <Placeholder error message={`GeoJSON을 찾을 수 없습니다 (${geo.message}).`} />;
+    return <Placeholder error message={`지도 경계 자료를 받지 못했어요. 새로고침해 주세요 (${geo.message}).`} />;
   }
   if (geo.status !== 'ready' || svgW === 0 || !pathFn) {
     return (
@@ -214,7 +214,7 @@ export default function SymbolMapCanvas({
   if (svgH < 200) {
     return (
       <div ref={containerRef} style={styles.container}>
-        <Placeholder error message={`지도 영역이 너무 작습니다 (${box.w}×${box.h}).\n창 크기를 키워주세요.`} />
+        <Placeholder error message={`지도 칸이 너무 작아요 (${box.w}×${box.h}).\n창을 넓혀 주세요.`} />
       </div>
     );
   }
