@@ -75,6 +75,8 @@ export default function Header({
         <span style={styles.copyright}>
           © 2026. 양정고등학교 김용현. All Rights Reserved. <a href="https://bgnl.kr" target="_blank" rel="noopener noreferrer" style={styles.copyrightLink}>bgnl.kr</a>
         </span>
+        {/* bgnl.kr 패밀리 사이트 드롭다운(https://bgnl.kr/family.js 가 그린다). 머리띠라 아래로 펼쳐진다. */}
+        <div data-bgnl-family="" style={styles.family} />
         {/* 그래프 고르기 */}
         <div ref={dropdownRef} style={styles.dropdownWrap}>
           <button
@@ -158,6 +160,10 @@ const styles: Record<string, React.CSSProperties> = {
   copyright: {
     fontSize: 12,
     color: 'var(--on-brand-muted)',
+    whiteSpace: 'nowrap',
+  },
+  family: {
+    color: 'var(--on-brand)',
     whiteSpace: 'nowrap',
   },
   copyrightLink: {
