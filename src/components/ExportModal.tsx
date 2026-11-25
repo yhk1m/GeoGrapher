@@ -309,7 +309,7 @@ const styles: Record<string, React.CSSProperties> = withUi({
     fontSize: 14,
     fontWeight: 600,
     color: 'var(--ink)',
-    background: 'var(--fill)',
+    background: 'var(--ctl-weak)',
   },
   exportBtn: {
     height: 40,

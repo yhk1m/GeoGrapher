@@ -1,6 +1,6 @@
 // © 2026 김용현
 import { type ScatterGraphData, type ScatterMode, type BubbleLegendPosition } from '../data/types';
-import { withUi, seg } from '../styles/ui';
+import { withUi, seg, SEG_TRACK } from '../styles/ui';
 
 interface Props {
   data: ScatterGraphData;
@@ -73,14 +73,14 @@ export default function ScatterInput({ data, onChange }: Props) {
               max={80}
             />
             <label style={{ ...styles.label, marginTop: 8 }}>범례 위치</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+            <div style={{ ...SEG_TRACK, display: 'grid', gridTemplateColumns: '1fr 1fr', borderRadius: 18 }}>
               {([['top-left', '왼쪽 위'], ['top-right', '오른쪽 위'], ['bottom-left', '왼쪽 아래'], ['bottom-right', '오른쪽 아래']] as [BubbleLegendPosition, string][]).map(([pos, label]) => (
                 <button
                   key={pos}
                   onClick={() => onChange({ ...data, bubbleLegendPosition: pos })}
                   style={{
-                    height: 32, borderRadius: 'var(--r-control)',
-                    fontSize: 12, fontWeight: data.bubbleLegendPosition === pos ? 600 : 400,
+                    minHeight: 34, padding: '6px 8px',
+                    fontSize: 13, lineHeight: 1.35, whiteSpace: 'nowrap',
                     ...seg(data.bubbleLegendPosition === pos),
                     cursor: 'pointer',
                   }}

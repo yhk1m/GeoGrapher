@@ -1,7 +1,7 @@
 // © 2026 김용현
 import { useState } from 'react';
 import { type RadarGraphData } from '../data/types';
-import { withUi, seg } from '../styles/ui';
+import { withUi, chip } from '../styles/ui';
 
 interface Props {
   data: RadarGraphData;
@@ -128,11 +128,8 @@ export default function RadarInput({ data, onChange }: Props) {
             <button
               key={i}
               onClick={() => setActiveSeries(i)}
-              style={{
-                height: 32, padding: '0 12px', borderRadius: 'var(--r-control)',
-                fontSize: 12, fontWeight: activeSeries === i ? 600 : 400,
-                ...seg(activeSeries === i), cursor: 'pointer',
-              }}
+              aria-pressed={activeSeries === i}
+              style={chip(activeSeries === i)}
             >
               {s.label}
             </button>

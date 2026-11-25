@@ -48,6 +48,22 @@
   --shadow-2: 0 4px 16px rgba(16, 24, 40, 0.08);
   --shadow-3: 0 12px 32px rgba(16, 24, 40, 0.12);
 
+  /* controls.css 가 읽는 이름 (당토 tokens.css 이름을 이 화면 토큰에 잇는다) */
+  --text-strong: var(--ink);
+  --text-muted: var(--muted);
+  --icon-muted: var(--icon);
+  --text-disabled: var(--faint);
+  --surface-raised: var(--surface);
+  --accent-press: color-mix(in oklch, var(--accent) 86%, black);
+  --fs-body: 0.8125rem;
+  --fw-medium: 400;
+  --fw-bold: 600;
+  --btn-h: 3.25rem;
+  --btn-h-s: 2.5rem;
+  --dur-fast: 150ms;
+  --dur: 250ms;
+  --ease: cubic-bezier(0.35, 0, 0.35, 1);
+
   --font-ui: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 
   color-scheme: light;
@@ -81,14 +97,9 @@ input::placeholder, textarea::placeholder {
   color: var(--faint);
 }
 
-/* 체크, 라디오, 슬라이더는 주색을 따른다 */
-input[type="checkbox"], input[type="radio"], input[type="range"] {
+/* 슬라이더는 주색을 따른다. 체크와 라디오 모양은 controls.css (SEED 20px) */
+input[type="range"] {
   accent-color: var(--accent);
-}
-input[type="checkbox"], input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
 }
 
 /* 글 칸에 초점이 오면 테두리를 주색으로 */
@@ -106,9 +117,23 @@ button {
   border: none;
   background: none;
 }
-button:disabled {
-  cursor: default;
-  opacity: 0.4;
+/* 못 누르는 단추: 흐린 글자 + 회색 바탕 (controls.css .dt-btn:disabled 와 같은 모양).
+   모양을 인라인 style 로 주는 단추가 많아서 !important 로 덮는다. 고르기 칸(.gg-select)은 입력 칸 모양이라 뺀다 */
+button:disabled:not(.gg-select) {
+  cursor: not-allowed;
+  opacity: 1;
+  color: var(--text-disabled) !important;
+  background: var(--ctl-weak) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+/* 누르면 살짝 작아진다 (SEED 0.97). 목록 줄, 메뉴 줄, 고르기 칸은 빼고 */
+button:not(:disabled):not(.gg-row):not(.gg-select):not(.gg-select-option):not([role^="menuitem"]):active {
+  scale: 0.97;
+}
+@media (prefers-reduced-motion: reduce) {
+  button:active { scale: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

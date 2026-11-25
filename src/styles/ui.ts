@@ -27,16 +27,18 @@ const INPUT: CSSProperties = {
 const FIELD: CSSProperties = { ...INPUT, height: 36, padding: '0 10px' };
 const CELL: CSSProperties = { ...INPUT, height: 30, padding: '0 6px', borderRadius: 6 };
 
+/* 버튼 모양은 controls.css(SEED) 값을 따른다: 회색 단추 = .dt-btn--weak */
 const ICON_BTN: CSSProperties = {
-  width: 28,
-  height: 28,
-  minWidth: 28,
+  width: 32,
+  height: 32,
+  minWidth: 32,
   padding: 0,
-  borderRadius: 6,
+  borderRadius: 'var(--r-control)',
   border: 'none',
-  background: 'var(--fill)',
-  color: 'var(--text)',
+  background: 'var(--ctl-weak)',
+  color: 'var(--ink)',
   fontSize: 16,
+  fontWeight: 600,
   lineHeight: 1,
   display: 'inline-flex',
   alignItems: 'center',
@@ -44,14 +46,29 @@ const ICON_BTN: CSSProperties = {
 };
 
 const TONAL_BTN: CSSProperties = {
-  height: 34,
-  padding: '0 12px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 36,
+  padding: '0 14px',
   borderRadius: 'var(--r-control)',
   border: 'none',
-  background: 'var(--fill)',
+  background: 'var(--ctl-weak)',
   color: 'var(--ink)',
   fontSize: 13,
   fontWeight: 600,
+  lineHeight: 1.35,
+  whiteSpace: 'nowrap',
+  cursor: 'pointer',
+};
+
+/** 세그먼트 길: 알약 모양 회색 길 (controls.css .dt-seg) */
+export const SEG_TRACK: CSSProperties = {
+  display: 'flex',
+  gap: 0,
+  padding: 4,
+  borderRadius: 999,
+  background: 'var(--ctl-weak)',
 };
 
 const LABEL: CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 };
@@ -99,13 +116,19 @@ const PATCH: Styles = {
   csvBtn: TONAL_BTN,
   resetBtn: TONAL_BTN,
   addBtn: TONAL_BTN,
+  modeGroup: SEG_TRACK,
   modeBtn: {
-    height: 34,
-    padding: '0 8px',
-    borderRadius: 'var(--r-control)',
+    flex: 1,
+    minWidth: 0,
+    height: 'auto',
+    minHeight: 34,
+    padding: '6px 8px',
+    borderRadius: 999,
     fontSize: 13,
     fontWeight: 600,
-    transition: 'background-color 150ms ease, border-color 150ms ease',
+    lineHeight: 1.35,
+    whiteSpace: 'nowrap',
+    transition: 'background-color 150ms ease, color 150ms ease, box-shadow 150ms ease',
   },
   toggleRow: { fontSize: 13, color: 'var(--ink)' },
   checkRow: { fontSize: 13, color: 'var(--ink)' },
@@ -184,9 +207,35 @@ export function withUi<T extends Styles>(styles: T): T {
   return out as T;
 }
 
-/** 고르는 단추(세그먼트)의 고른 칸: 연한 주색 + 주색 테두리. 채우지 않는다 */
+/**
+ * 세그먼트(SEG_TRACK 안의 칸)의 고른 칸과 안 고른 칸 (controls.css .dt-seg).
+ * 고른 칸은 떠 있는 흰 면 + 1px 선, 안 고른 칸은 흐린 굵은 글자.
+ */
 export function seg(selected: boolean): CSSProperties {
   return selected
-    ? { background: 'var(--accent-weak)', color: 'var(--accent-text)', border: '1px solid var(--accent)' }
-    : { background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--line-strong)' };
+    ? { border: 'none', borderRadius: 999, fontWeight: 600, background: 'var(--surface-raised)', color: 'var(--ink)', boxShadow: 'inset 0 0 0 1px var(--line), 0 1px 2px rgba(16, 24, 40, .06)' }
+    : { border: 'none', borderRadius: 999, fontWeight: 600, background: 'transparent', color: 'var(--muted)', boxShadow: 'none' };
+}
+
+/**
+ * 칩 (controls.css .dt-chip, 작은 것 32). 여러 개 중 하나를 고르는 탭 줄에 쓴다.
+ * 고른 칩은 진한 회색 채움(주색이 아님), 안 고른 칩은 반투명 회색.
+ */
+export function chip(selected: boolean): CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 32,
+    padding: '0 10px',
+    border: 'none',
+    borderRadius: 999,
+    fontSize: 13,
+    lineHeight: 1.35,
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+    fontWeight: selected ? 600 : 400,
+    background: selected ? 'var(--ink)' : 'var(--ctl-weak)',
+    color: selected ? 'var(--surface)' : 'var(--ink)',
+  };
 }
